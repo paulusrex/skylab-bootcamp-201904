@@ -1,5 +1,5 @@
 'use strict'
 
-xdescribe('validate', () => {
+describe('validate', () => {
     // TODO
 })

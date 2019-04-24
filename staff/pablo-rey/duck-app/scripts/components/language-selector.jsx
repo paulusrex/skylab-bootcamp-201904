@@ -1,8 +1,9 @@
-function LanguageSelector({ onLanguageChange }) {
+function LanguageSelector({ onLanguageChange, lang}) {
   return (
     <select
       onChange={e => onLanguageChange(e.target.value)}
       className="language"
+      value={lang}
     >
       <option value="en">English</option>
       <option value="es">Español</option>

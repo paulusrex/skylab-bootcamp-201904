@@ -1,39 +1,47 @@
 const i18n = {
+  set language(lang) {
+    localStorage.lang = lang;
+  },
+
+  get language() {
+    return localStorage.lang || "en";
+  },
+  
   logout: {
     en: {
-      logout: "Log Out"
+      logout: "Log Out",
     },
     es: {
-      logout: "Desconectarse"
+      logout: "Desconectarse",
     },
     ca: {
-      logout: "Desconectarse"
+      logout: "Desconectarse",
     },
     ga: {
-      logout: "Desconectarse"
+      logout: "Desconectarse",
     },
   },
   landing: {
     en: {
       register: "Register",
       or: "or",
-      login: "Login"
+      login: "Login",
     },
     es: {
       register: "Regístrate",
       or: "o",
-      login: "Inicia sesión"
+      login: "Inicia sesión",
     },
     ca: {
       register: "Registra't",
       or: "o",
-      login: "Inicia sessió"
+      login: "Inicia sessió",
     },
     ga: {
       register: "Rexistrese",
       or: "ou",
-      login: "Inicia sesión"
-    }
+      login: "Inicia sesión",
+    },
   },
   register: {
     en: {
@@ -41,75 +49,75 @@ const i18n = {
       name: "Name",
       surname: "Surname",
       email: "E-mail",
-      password: "Password"
+      password: "Password",
     },
     es: {
       title: "Registro",
       name: "Nombre",
       surname: "Apellido",
       email: "E-milio",
-      password: "Contraseña"
+      password: "Contraseña",
     },
     ca: {
       title: "Registre",
       name: "Nom",
       surname: "Cognom",
       email: "E-mil·li",
-      password: "Contrasenya"
+      password: "Contrasenya",
     },
     ga: {
       title: "Rexistro",
       name: "Nome",
       surname: "Apelido",
       email: "E-miliño",
-      password: "Contrasinal"
-    }
+      password: "Contrasinal",
+    },
   },
   admin: {
     en: "Administrator",
     es: "Administrador",
     ca: "Gestor",
-    ga: "Administrador"
+    ga: "Administrador",
   },
   login: {
     en: {
       title: "Login",
       email: "E-mail",
-      password: "Password"
+      password: "Password",
     },
     es: {
       title: "Iniciar sesión",
       email: "E-milio",
-      password: "Contraseña"
+      password: "Contraseña",
     },
     ca: {
       title: "Inici de sessió",
       email: "E-mil·li",
-      password: "Contrasenya"
+      password: "Contrasenya",
     },
     ga: {
       title: "Inicio da sesión",
       email: "E-miliño",
-      password: "Contrasinal"
-    }
+      password: "Contrasinal",
+    },
   },
   home: {
     en: {
       logout: "logout",
-      buttonText: "Search"
+      buttonText: "Search",
     },
     es: {
       logout: "Desconectarse",
-      buttonText: "Buscar"
+      buttonText: "Buscar",
     },
     ca: {
       logout: "Desconectarse",
-      buttonText: "Buscar"
+      buttonText: "Buscar",
     },
     ga: {
       logout: "Desconectarse",
-      buttonText: "Buscar"
-    }
+      buttonText: "Buscar",
+    },
   },
   errors: {
     en: {
@@ -117,28 +125,28 @@ const i18n = {
       2: "name not provided",
       3: "surname not provided",
       4: "email not provided",
-      5: "password not provided"
+      5: "password not provided",
     },
     es: {
       1: "credenciales incorrectas",
       2: "nombre vacio",
       3: "apellidos vacio",
       4: "email vacio",
-      5: "password vacio"
+      5: "password vacio",
     },
     ca: {
       1: "credencials incorrectes",
       2: "nombre vacio",
       3: "apellidos vacio",
       4: "email vacio",
-      5: "password vacio"
+      5: "password vacio",
     },
     ga: {
       1: "credenciales incorrectas",
       2: "nome vacio",
       3: "apelidos vacio",
       4: "email vacio",
-      5: "contrasinal vacio"
-    }
-  }
+      5: "contrasinal vacio",
+    },
+  },
 };

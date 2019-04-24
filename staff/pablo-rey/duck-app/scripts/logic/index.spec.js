@@ -22,27 +22,29 @@ describe("logic", () => {
       });
 
       it("should succeed on correct user data", done => {
-        logic.registerUser(name, surname, email, password, function(error) {
-          expect(error).toBeUndefined();
-          done();
-        });
+        logic
+          .registerUser(name, surname, email, password)
+          .then(response => {
+            expect(response).toBeUndefined();
+            done();
+          })
+          .catch(done);
       });
 
       describe("on already existing user", () => {
-        beforeEach(done =>
-          logic.registerUser(name, surname, email, password, done)
-        );
-
         it("should fail on retrying to register", done => {
-          logic.registerUser(name, surname, email, password, function(error) {
-            expect(error).toBeDefined();
-            expect(error instanceof Error).toBeTruthy();
-
-            expect(error.message).toBe(
-              `user with username \"${email}\" already exists`
-            );
-
-            done();
+          logic.registerUser(name, surname, email, password)
+          .then(() => {
+            logic
+              .registerUser(name, surname, email, password)
+              .then(() => done(Error("expected no response here")))
+              .catch(error => {
+                expect(error instanceof LogicError).toBeTruthy();
+                expect(error.message).toBe(
+                  `user with username \"${email}\" already exists`
+                );
+                done();
+              });
           });
         });
       });
@@ -53,7 +55,7 @@ describe("logic", () => {
             const name = undefined;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `name is not optional`);
           });
 
@@ -61,7 +63,7 @@ describe("logic", () => {
             const name = null;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `name is not optional`);
           });
 
@@ -69,7 +71,7 @@ describe("logic", () => {
             const name = "";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "name is empty");
           });
 
@@ -77,7 +79,7 @@ describe("logic", () => {
             const name = " \t    \n";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "name is empty");
           });
         });
@@ -87,7 +89,7 @@ describe("logic", () => {
             const surname = undefined;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `surname is not optional`);
           });
 
@@ -95,7 +97,7 @@ describe("logic", () => {
             const surname = null;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `surname is not optional`);
           });
 
@@ -103,7 +105,7 @@ describe("logic", () => {
             const surname = "";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "surname is empty");
           });
 
@@ -111,7 +113,7 @@ describe("logic", () => {
             const surname = " \t    \n";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "surname is empty");
           });
         });
@@ -121,7 +123,7 @@ describe("logic", () => {
             const email = undefined;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `email is not optional`);
           });
 
@@ -129,7 +131,7 @@ describe("logic", () => {
             const email = null;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `email is not optional`);
           });
 
@@ -137,7 +139,7 @@ describe("logic", () => {
             const email = "";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "email is empty");
           });
 
@@ -145,14 +147,14 @@ describe("logic", () => {
             const email = " \t    \n";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "email is empty");
           });
 
           it("should fail on non-email email", () => {
             const nonEmail = "non-email";
             expect(() =>
-              logic.registerUser(name, surname, nonEmail, password, () => {})
+              logic.registerUser(name, surname, nonEmail, password)
             ).toThrowError(FormatError, `${nonEmail} is not an e-mail`);
           });
         });
@@ -162,7 +164,7 @@ describe("logic", () => {
             const password = undefined;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `password is not optional`);
           });
 
@@ -170,7 +172,7 @@ describe("logic", () => {
             const password = null;
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(RequirementError, `password is not optional`);
           });
 
@@ -178,7 +180,7 @@ describe("logic", () => {
             const password = "";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "password is empty");
           });
 
@@ -186,15 +188,9 @@ describe("logic", () => {
             const password = " \t    \n";
 
             expect(() =>
-              logic.registerUser(name, surname, email, password, () => {})
+              logic.registerUser(name, surname, email, password)
             ).toThrowError(ValueError, "password is empty");
           });
-        });
-
-        it("should fail if no callback", () => {
-          expect(() => {
-            logic.registerUser(name, surname, email, password);
-          }).toThrowError(RequirementError, `undefined is not optional`);
         });
       });
     });
@@ -205,12 +201,10 @@ describe("logic", () => {
       let email;
       let password;
 
-      beforeAll(done => {
+      beforeAll(() => {
         email = generateRandomEmail();
         password = randomString();
-        logic.registerUser(name, surname, email, password, response => {
-          done();
-        });
+        return userApi.create(name, surname, email, password);
       });
 
       beforeEach(() => {
@@ -219,35 +213,37 @@ describe("logic", () => {
       });
 
       it("should succeed on correct user data", done => {
-        logic.loginUser(email, password, response => {
-          expect(typeof response).toBe("undefined");
-          expect(typeof logic.__userId__).toBe("string");
-          expect(typeof logic.__token__).toBe("string");
-          done();
-        });
+        logic.loginUser(email, password)
+          .then(() => {
+            expect(typeof logic.__userId__).toBe("string");
+            expect(typeof logic.__token__).toBe("string");
+            done();
+          });
       });
 
       describe("should fail on wrong data", () => {
         it("should fail on wrong username", done => {
           const wrongEmail = generateRandomEmail();
 
-          logic.loginUser(wrongEmail, password, response => {
-            expect(response.status).toBe("KO");
-            expect(response.error).toBe(
-              `user with username "${wrongEmail}" does not exist`
-            );
-            done();
-          });
+          logic.loginUser(wrongEmail, password)
+            .then(() => done(Error("expected no response here")))
+            .catch(error => {
+              expect(error.message).toBe(
+                `user with username "${wrongEmail}" does not exist`
+              );
+              done();
+            });
         });
 
         it("should fail on wrong password", done => {
           const wrongPassword = randomString();
 
-          logic.loginUser(email, wrongPassword, response => {
-            expect(response.status).toBe("KO");
-            expect(response.error).toBe("username and/or password wrong");
-            done();
-          });
+          logic.loginUser(email, wrongPassword)
+            .then(() => done(Error("expected no response here")))
+            .catch(error => {
+              expect(error.message).toBe("username and/or password wrong");
+              done();
+            });
         });
       });
 
@@ -318,12 +314,6 @@ describe("logic", () => {
               logic.loginUser(email, password, () => {})
             ).toThrowError(ValueError, "password is empty");
           });
-        });
-
-        it("should fail if no callback", () => {
-          expect(() => {
-            logic.loginUser(email, password);
-          }).toThrowError(RequirementError, `undefined is not optional`);
         });
       });
     });
@@ -337,37 +327,33 @@ describe("logic", () => {
       beforeEach(done => {
         email = generateRandomEmail();
         password = randomString();
-        logic.registerUser(name, surname, email, password, () => {
-          logic.loginUser(email, password, (response) => {
-            done();
-          });
-        });
+        return userApi.create(name, surname, email, password)
+          .then(() => userApi.authenticate(email, password))
+          .then(response => {
+              logic.__userId__ = response.data.id;
+              logic.__token__ = response.data.token;
+              done()
+            }
+          );
       });
 
       it("should retreive correct data for user id", done => {
-        logic.retrieveUser((user) => {
-          expect(user.name).toBe(name);
-          expect(user.surname).toBe(surname);
-          expect(user.email).toBe(email);
-          done();
-        });
+        logic.retrieveUser()
+          .then(user => {
+            expect(user.name).toBe(name);
+            expect(user.surname).toBe(surname);
+            expect(user.email).toBe(email);
+            done();
+          })
+          .catch(done);
       });
-
-      describe("fail tests", () => {
-
-        it("should fail if no callback", () => {
-          expect(() => {
-            logic.retrieveUser();
-          }).toThrowError(RequirementError, `undefined is not optional`);
-        });
-      });      
     });
   });
 
   describe("ducks", () => {
     describe("search ducks", () => {
       it("should succeed on correct query", done => {
-        logic.searchDucks("yellow", ducks => {
+        logic.searchDucks("yellow").then(ducks => {
           expect(ducks).toBeDefined();
           expect(ducks instanceof Array).toBeTruthy();
           expect(ducks.length).toBe(13);

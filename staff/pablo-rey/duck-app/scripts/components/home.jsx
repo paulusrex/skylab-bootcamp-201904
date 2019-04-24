@@ -4,15 +4,13 @@ function Home(props) {
   const [detailDuck, setDetailDuck] = React.useState(null);
 
   const handleSearch = searchText => {
-    logic.searchDucks(searchText, ducks => {
-      setItems([...ducks]);
-    });
+    logic.searchDucks(searchText)
+      .then(ducks => setItems([...ducks]));
   };
 
   const handleDetail = duck => {
-    logic.retrieveDuck(duck.id, (retreivedDuck) => {
-      setDetailDuck(retreivedDuck);
-    })
+    logic.retrieveDuck(duck.id)
+    .then(duckDetail => setDetailDuck(duckDetail))
   };
 
   return (
