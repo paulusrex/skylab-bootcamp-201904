@@ -1,4 +1,4 @@
-const SearchForm = ({literals, selectedLanguage, cssClass, onSearch}) => {
+function SearchForm ({literals, selectedLanguage, cssClass, onSearch}) {
   const handleSearch = (e) => {
     e.preventDefault();
     onSearch(e.target.searchText.value);
