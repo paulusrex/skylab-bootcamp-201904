@@ -326,29 +326,26 @@ describe("logic", () => {
       let email;
       let password;
 
-      beforeEach(done => {
+      beforeEach(() => {
         email = generateRandomEmail();
         password = randomString();
-        return userApi.create(name, surname, email, password)
+      });
+
+      test("should retrieve correct data for user id",  () => 
+        userApi.create(name, surname, email, password)
           .then(() => userApi.authenticate(email, password))
           .then(response => {
               logic.__userId__ = response.data.id;
               logic.__token__ = response.data.token;
-              done()
-            }
-          );
-      });
-
-      it("should retreive correct data for user id", done => {
-        logic.retrieveUser()
+          })
+          .then(() => logic.retrieveUser())  
           .then(user => {
+            expect(logic.__user__).toBe(user);
             expect(user.name).toBe(name);
             expect(user.surname).toBe(surname);
             expect(user.email).toBe(email);
-            done();
           })
-          .catch(done);
-      });
+        );
     });
 
     describe("update", () => {
@@ -363,24 +360,27 @@ describe("logic", () => {
         let user;
         let fields;
         username = generateRandomEmail();
-        userApi.create(name, surname, username, password)
+        return userApi.create(name, surname, username, password)
           .then(() => userApi.authenticate(username, password))
           .then(({ data }) => {
-            id = data.id;
-            token = data.token;
+            id = logic.__userId__ = data.id;
+            token = logic.__token__ = data.token;
           })
           .then(() => userApi.retrieve(id,token))
-          .then(_user => {
-            user = _user;
+          .then(res => {
+            user = res.data;
             fields = { 
               ...user, 
               testField: randomString(),
             }
+            logic.__user__ = {...fields};
           })
-          .then(() => logic.update({...fields}))
-          .then(res => expect(res.status).toBe("OK"))
+          .then(() => logic.updateUser())
           .then(() => userApi.retrieve(id, token))
-          .then(({ data: user }) => expect(user).toEqual(fields));
+          .then((res) => {
+            expect(res.data).toEqual(fields)
+            return res;
+          });
       });
   
     });

@@ -11,9 +11,8 @@ const logic = {
    * @param {string} surname
    * @param {string} email
    * @param {string} password
-   * @param {Function} callback
    */
-  registerUser(name, surname, email, password, callback) {
+  registerUser(name, surname, email, password) {
     validate.arguments([
       { name: "name", value: name, type: "string", notEmpty: true },
       { name: "surname", value: surname, type: "string", notEmpty: true },
@@ -34,9 +33,8 @@ const logic = {
    *
    * @param {string} email
    * @param {string} password
-   * @param {Function} callback
    */
-  loginUser(email, password, callback) {
+  loginUser(email, password) {
     validate.arguments([
       { name: "email", value: email, type: "string", notEmpty: true },
       { name: "password", value: password, type: "string", notEmpty: true },
@@ -57,21 +55,44 @@ const logic = {
    *
    * @param {string} id
    * @param {string} token
-   * @param {Function} callback
    */
   retrieveUser() {
-
-    return userApi.retrieve(logic.__userId__, logic.__token__)
+    return userApi.retrieve(this.__userId__, this.__token__)
       .then(response => {
         if (response.status !== "OK")  throw new LogicError(response.error);
-        const { name, surname, username: email } = response.data;
-        return { name, surname, email };
-    });
+        
+        this.__user__= {};
+        const { data } = response;
+        for (let key in data) {
+          if (key === 'username') this.__user__.email = data[key];
+          else if (key !==  'password') this.__user__[key]= data[key];
+        }
+        
+        return this.__user__;
+      });
+  },
+
+  updateUser() {
+    return userApi.update(this.__userId__, this.__token__, this.__user__)
   },
 
   logout() {
     this.__userId__ = null;
     this.__token__ = null;
+  },
+
+  isFavorite: (duck) => {
+    return this.favoriteDucks.includes(duck.id);
+  },
+
+  toggleFavorite: (toggleDuck) => {
+    const index = this.favoriteDucks.findIndex(duck => duck.id === toggleDuck.id);
+    if (index === -1) {
+      this.favoriteDucks.splice(index,1)
+    } else  {
+      this.favoriteDucks.push(toggleDuck);
+    }
+    logic.updateUser();
   },
 
   get isLogged() {
@@ -93,18 +114,21 @@ const logic = {
   },
 
   searchDucks(query) {
-    // TODO validate inputs
+    validate.arguments([
+      { name: "query", value: query, type: "string", optional: false },
+    ]);
 
-    // TODO handle api errors
     return duckApi.searchDucks(query);
   },
 
   retrieveDuck(id) {
-    // TODO validate inputs
+    validate.arguments([
+      { name: "id", value: id, type: "string", notEmpty: false },
+    ]);
 
-    // TODO handle api errors
-    return duckApi.retrieveDuck(id);
+    return duckApi.retrieveDuck(id)
   },
+
 };
 
 export default logic

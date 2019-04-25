@@ -242,21 +242,20 @@ describe("user api", () => {
     let username;
     const password = randomString();
     
-    it("should succeed on correct user data", () => {
+    it("should succeed on update user data", () => {
       let id;
       let token;
       let user;
       let fields;
       username = generateRandomEmail();
-      userApi.create(name, surname, username, password)
+      return userApi.create(name, surname, username, password)
         .then(() => userApi.authenticate(username, password))
         .then(({ data }) => {
           id = data.id;
           token = data.token;
         })
         .then(() => userApi.retrieve(id,token))
-        .then(_user => {
-          user = _user;
+        .then( ({ data: user  }) => {
           fields = { 
             ...user, 
             testField: randomString(),
