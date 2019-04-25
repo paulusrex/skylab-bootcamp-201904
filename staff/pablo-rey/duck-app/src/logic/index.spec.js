@@ -350,6 +350,41 @@ describe("logic", () => {
           .catch(done);
       });
     });
+
+    describe("update", () => {
+      const name = randomString();
+      const surname = randomString();
+      let username;
+      const password = randomString();
+      
+      it("should succeed on correct user data", () => {
+        let id;
+        let token;
+        let user;
+        let fields;
+        username = generateRandomEmail();
+        userApi.create(name, surname, username, password)
+          .then(() => userApi.authenticate(username, password))
+          .then(({ data }) => {
+            id = data.id;
+            token = data.token;
+          })
+          .then(() => userApi.retrieve(id,token))
+          .then(_user => {
+            user = _user;
+            fields = { 
+              ...user, 
+              testField: randomString(),
+            }
+          })
+          .then(() => logic.update({...fields}))
+          .then(res => expect(res.status).toBe("OK"))
+          .then(() => userApi.retrieve(id, token))
+          .then(({ data: user }) => expect(user).toEqual(fields));
+      });
+  
+    });
+  
   });
 
   describe("ducks", () => {

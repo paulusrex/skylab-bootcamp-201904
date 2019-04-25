@@ -108,21 +108,18 @@ const userApi = {
    * @param {Object} fields
    * @param {Function} callback
    */
-  update(userId, token, fields, callback) {
+  update(userId, token, fields) {
     validate.arguments([
       { name: "userId", value: userId, type: "string", notEmpty: true },
       { name: "token", value: token, type: "string", notEmpty: true },
       { name: "fields", value: fields, type: "object", notEmpty: true },
-      { value: callback, type: "function" },
     ]);
 
-    this.__call__({
-      path: "/user/" + userId,
+    return fetch( `${this.__url__}/user/${userId}`,{
       method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
       body: fields,
-      token,
-      callback,
-    });
+    }).then( res => res.json());
   },
 };
 

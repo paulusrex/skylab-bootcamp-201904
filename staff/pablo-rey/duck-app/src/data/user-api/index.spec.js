@@ -1,5 +1,10 @@
-import userApi from '.'
-import { ConnectionError, TimeoutError, ValueError, RequirementError } from '../../common/errors'
+import userApi from ".";
+import {
+  ConnectionError,
+  TimeoutError,
+  ValueError,
+  RequirementError,
+} from "../../common/errors";
 
 function randomString(length = 20) {
   return Number(Math.random() * 10 ** length).toString(35);
@@ -10,338 +15,272 @@ function generateRandomEmail() {
 }
 
 describe("user api", () => {
-  const name = "Manuel";
-  const surname = "Barzi";
+  const name = randomString();
+  const surname = randomString();
   let username;
-  const password = "123";
+  const password = randomString();
 
-  beforeEach(() => (username = `manuelbarzi-${Math.random()}@gmail.com`));
+  beforeEach(() => (username = generateRandomEmail()));
 
   describe("create", () => {
-    it("should succeed on correct user data", done => {
-      userApi
-        .create(name, surname, username, password)
-        .then(response => {
-          expect(response).toBeDefined();
+    it("should succeed on correct user data", () => {
+      userApi.create(name, surname, username, password).then(res => {
+        expect(res).toBeDefined();
 
-          const { status, data } = response;
+        const { status, data } = res;
 
-          expect(status).toBe("OK");
-          expect(data).toBeDefined();
+        expect(status).toBe("OK");
+        expect(data).toBeDefined();
 
-          const { id } = data;
-          expect(typeof id).toBe("string");
-          expect(id.length).toBeGreaterThan(0);
-
-          done();
-        })
-        .catch(done);
-    });
-
-    describe("on already existing user", () => {
-      beforeEach(done =>
-        userApi
-          .create(name, surname, username, password)
-          .then(() => done())
-          .catch(done)
-      );
-
-      it("should fail on retrying to register", done => {
-        userApi
-          .create(name, surname, username, password)
-          .then(response => {
-            expect(response).toBeDefined();
-
-            const { status, error: _error } = response;
-
-            expect(status).toBe("KO");
-            expect(_error).toBe(
-              `user with username \"${username}\" already exists`
-            );
-
-            done();
-          })
-          .catch(done);
+        const { id } = data;
+        expect(typeof id).toBe("string");
+        expect(id.length).toBeGreaterThan(0);
       });
     });
 
-    it("should fail on undefined name", () => {
-      const name = undefined;
+    it("should fail on retrying to register", () =>
+      userApi.create(name, surname, username, password)
+        .then(() => userApi.create(name, surname, username, password))
+        .then(response => {
+          expect(response).toBeDefined();
+          const { status, error: _error } = response;
+          expect(status).toBe("KO");
+          expect(_error).toBe(
+            `user with username \"${username}\" already exists`
+          );
+        }));
 
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `name is not optional`);
+    describe("sync fails", () => {
+      it("should fail on undefined name", () => {
+        const name = undefined;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `name is not optional`);
+      });
+
+      it("should fail on null name", () => {
+        const name = null;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `name is not optional`);
+      });
+
+      it("should fail on empty name", () => {
+        const name = "";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "name is empty");
+      });
+
+      it("should fail on blank name", () => {
+        const name = " \t    \n";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "name is empty");
+      });
+
+      it("should fail on undefined surname", () => {
+        const surname = undefined;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `surname is not optional`);
+      });
+
+      it("should fail on null surname", () => {
+        const surname = null;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `surname is not optional`);
+      });
+
+      it("should fail on empty surname", () => {
+        const surname = "";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "surname is empty");
+      });
+
+      it("should fail on blank surname", () => {
+        const surname = " \t    \n";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "surname is empty");
+      });
+
+      it("should fail on undefined username", () => {
+        const username = undefined;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `username is not optional`);
+      });
+
+      it("should fail on null username", () => {
+        const username = null;
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(RequirementError, `username is not optional`);
+      });
+
+      it("should fail on empty username", () => {
+        const username = "";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "username is empty");
+      });
+
+      it("should fail on blank username", () => {
+        const username = " \t    \n";
+
+        expect(() =>
+          userApi.create(name, surname, username, password)
+        ).toThrowError(ValueError, "username is empty");
+      });
     });
-
-    it("should fail on null name", () => {
-      const name = null;
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `name is not optional`);
-    });
-
-    it("should fail on empty name", () => {
-      const name = "";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "name is empty");
-    });
-
-    it("should fail on blank name", () => {
-      const name = " \t    \n";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "name is empty");
-    });
-
-    it("should fail on undefined surname", () => {
-      const surname = undefined;
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `surname is not optional`);
-    });
-
-    it("should fail on null surname", () => {
-      const surname = null;
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `surname is not optional`);
-    });
-
-    it("should fail on empty surname", () => {
-      const surname = "";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "surname is empty");
-    });
-
-    it("should fail on blank surname", () => {
-      const surname = " \t    \n";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "surname is empty");
-    });
-
-    it("should fail on undefined username", () => {
-      const username = undefined;
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `username is not optional`);
-    });
-
-    it("should fail on null username", () => {
-      const username = null;
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(RequirementError, `username is not optional`);
-    });
-
-    it("should fail on empty username", () => {
-      const username = "";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "username is empty");
-    });
-
-    it("should fail on blank username", () => {
-      const username = " \t    \n";
-
-      expect(() =>
-        userApi.create(name, surname, username, password, () => {})
-      ).toThrowError(ValueError, "username is empty");
-    });
-
-    // TODO password fail cases
   });
 
   describe("authenticate", () => {
     let _id;
 
-    beforeEach(done =>
+    beforeEach(() =>
       userApi
         .create(name, surname, username, password)
-        .then(response => {
-          _id = response.data.id;
-
-          done();
-        })
-        .catch(done)
+        .then(response => (_id = response.data.id))
     );
 
-    it("should succeed on correct user credential", done => {
+    it("should succeed on correct user credential", () =>
+      userApi.authenticate(username, password).then(response => {
+        expect(response).toBeDefined();
+
+        const { status, data } = response;
+
+        expect(status).toBe("OK");
+        expect(data).toBeDefined();
+
+        const { id, token } = data;
+
+        expect(typeof id).toBe("string");
+        expect(id.length).toBeGreaterThan(0);
+        expect(id).toBe(_id);
+
+        expect(typeof token).toBe("string");
+        expect(token.length).toBeGreaterThan(0);
+
+        const [, payloadB64] = token.split(".");
+        const payloadJson = atob(payloadB64);
+        const payload = JSON.parse(payloadJson);
+
+        expect(payload.id).toBe(id);
+      }));
+
+    it("should fail on non-existing user", () =>
       userApi
-        .authenticate(username, password)
+        .authenticate(
+          (username = randomString() + "unexisting-user@mail.com"),
+          password
+        )
         .then(response => {
           expect(response).toBeDefined();
-
-          const { status, data } = response;
-
-          expect(status).toBe("OK");
-          expect(data).toBeDefined();
-
-          const { id, token } = data;
-
-          expect(typeof id).toBe("string");
-          expect(id.length).toBeGreaterThan(0);
-          expect(id).toBe(_id);
-
-          expect(typeof token).toBe("string");
-          expect(token.length).toBeGreaterThan(0);
-
-          const [, payloadB64] = token.split(".");
-          const payloadJson = atob(payloadB64);
-          const payload = JSON.parse(payloadJson);
-
-          expect(payload.id).toBe(id);
-
-          done();
-        })
-        .catch(done);
-    });
-
-    it("should fail on non-existing user", done => {
-      userApi
-        .authenticate((username = "unexisting-user@mail.com"), password)
-        .then(response => {
-          expect(response).toBeDefined();
-
           const { status, error: _error } = response;
-
           expect(status).toBe("KO");
           expect(_error).toBe(
             `user with username \"${username}\" does not exist`
           );
-
-          done();
-        })
-        .catch(done);
-    });
+        }));
   });
 
   describe("retrieve", () => {
     let _id, token;
 
-    beforeEach(done =>
-      userApi
-        .create(name, surname, username, password)
-        .then(response => {
-          _id = response.data.id;
-
-          // userApi.authenticate(username, password)
-          //     .then(response => {
-          //         token = response.data.token
-
-          //         done()
-          //     })
-          //     .catch(done)
-
-          return userApi.authenticate(username, password).then(response => {
-            token = response.data.token;
-
-            done();
-          });
-        })
-        .catch(done)
+    beforeEach(() => userApi.create(name, surname, username, password)
+        .then(response => _id = response.data.id)
+        .then(() => userApi.authenticate(username, password))
+        .then(response => token = response.data.token)
     );
 
-    it("should succeed on correct user id and token", done => {
-      userApi
-        .retrieve(_id, token)
-        .then(response => {
-          const { status, data } = response;
+    it("should succeed on correct user id and token", () =>
+      userApi.retrieve(_id, token).then(response => {
+        const { status, data } = response;
 
-          expect(status).toBe("OK");
-          expect(data).toBeDefined();
+        expect(status).toBe("OK");
+        expect(data).toBeDefined();
 
-          expect(data.id).toBe(_id);
-          expect(data.name).toBe(name);
-          expect(data.surname).toBe(surname);
-          expect(data.username).toBe(username);
-          expect(data.password).toBeUndefined();
+        expect(data.id).toBe(_id);
+        expect(data.name).toBe(name);
+        expect(data.surname).toBe(surname);
+        expect(data.username).toBe(username);
+        expect(data.password).toBeUndefined();
+      }));
 
-          done();
-        })
-        .catch(done);
-    });
+    it("should fail on incorrect user id", () => {
+      const wrongId = randomString();
 
-    it("should fail on incorrect user id", done => {
-      const wrongId = "5cb9998f2e59ee0009eac02c";
+      return userApi.retrieve(wrongId, token).then(response => {
+        const { status, error: _error } = response;
 
-      userApi
-        .retrieve(wrongId, token)
-        .then(response => {
-          const { status, error: _error } = response;
-
-          expect(status).toBe("KO");
-          expect(_error).toBe(
-            `token id \"${_id}\" does not match user \"${wrongId}\"`
-          );
-
-          done();
-        })
-        .catch(done);
+        expect(status).toBe("KO");
+        expect(_error).toBe(
+          `token id \"${_id}\" does not match user \"${wrongId}\"`
+        );
+      });
     });
   });
 
-  // describe("update", () => {
-  //   const name = "test";
-  //   const surname = "test";
-  //   let username;
-  //   const password = randomString();
-  //   let id;
-  //   let token;
+  describe("update", () => {
+    const name = randomString();
+    const surname = randomString();
+    let username;
+    const password = randomString();
+    
+    it("should succeed on correct user data", () => {
+      let id;
+      let token;
+      let user;
+      let fields;
+      username = generateRandomEmail();
+      userApi.create(name, surname, username, password)
+        .then(() => userApi.authenticate(username, password))
+        .then(({ data }) => {
+          id = data.id;
+          token = data.token;
+        })
+        .then(() => userApi.retrieve(id,token))
+        .then(_user => {
+          user = _user;
+          fields = { 
+            ...user, 
+            testField: randomString(),
+          }
+        })
+        .then(() => userApi.update(id, token, {...fields}))
+        .then(res => expect(res.status).toBe("OK"))
+        .then(() => userApi.retrieve(id, token))
+        .then(({ data: user }) => expect(user).toEqual(fields));
+    });
 
-  //   beforeAll(done => {
-  //     username = generateRandomEmail();
-  //     userApi.create(name, surname, username, password, response => {
-  //       userApi.authenticate(username, password, ({ data }) => {
-  //         id = data.id;
-  //         token = data.token;
-  //         done();
-  //       });
-  //     });
-  //   });
-
-  //   fit("should succeed on correct user data", done => {
-  //     const randomText = randomString();
-  //     const fields = { testField: randomText };
-  //     userApi.update(id, token, fields, response => {
-  //       expect(response.status).toBe("OK");
-  //       userApi.retrieve(id, token, ({ data: user }) => {
-  //         expect(user).toEqual(jasmine.objectContaining(fields));
-  //         done();
-  //       });
-  //     });
-  //   });
-
-  //   it("should succeed on delete a field user data", done => {
-  //     const randomText = randomString();
-  //     const fields = { testField: randomText };
-  //     userApi.update(id, token, fields, response => {
-  //       expect(response.status).toBe("OK");
-  //       userApi.retrieve(id, token, ({ data: user }) => {
-  //         expect(user).toEqual(jasmine.objectContaining(fields));
-  //         userApi.update(id, token, { testField: null }, response => {
-  //           expect(response.status).toBe("OK");
-  //           userApi.retrieve(id, token, ({ data: user }) => {
-  //             expect(user["testField"]).toBeUndefined();
-  //             done();
-  //           });
-  //         });
-  //       });
-  //     });
-  //   });
-  // });
+    // it("should succeed on delete a field user data", () => {
+    //   const randomText = randomString();
+    //   const fields = { testField: randomText };
+    //   return userApi.update(id, token, fields)
+    //     .then(res => expect(res.status).toBe("OK"))
+    //     .then(() => userApi.retrieve(id, token))
+    //     .then(({ data: user }) => expect(user).toEqual(fields))
+    //     .then(() =>  userApi.update(id, token), { testField: null })
+    //     .then(res => expect(res.status).toBe("OK"))
+    //     .then(() => userApi.retrieve(id, token))
+    //     .then(({ data: user }) => expect(user["testField"]).toBeUndefined())
+    // })
+  });
 
   describe("when api url fails", () => {
     let url;
