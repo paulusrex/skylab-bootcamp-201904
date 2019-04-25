@@ -2,7 +2,7 @@
 
 const duckApi = {
     __url__: 'https://duckling-api.herokuapp.com/api',
-    __timeout__ = 0,
+    __timeout__: 0,
 
     searchDucks(query) {
         validate.arguments([
@@ -16,7 +16,7 @@ const duckApi = {
           const timeout = setTimeout(() => controller.abort(), this.__timeout__);
         }
 
-        return fetch(`${this.__url__}/search?q=${query}` {
+        return fetch(`${this.__url__}/search?q=${query}`, {
           signal,
         })
           .then(res => res.json())
