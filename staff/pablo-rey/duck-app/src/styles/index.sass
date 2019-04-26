@@ -17,16 +17,30 @@ html, body
   padding: 0
   font-family: 'Raleway', sans-serif
 
-.favoriteOn
-  color: red
+.favorite
+  font-size: 2rem
+  display: inline
+  position: absolute
+  top: 1rem
+  right: 1rem
+  
+  &--on
+    color: red
+
+  &--off
+    color: black
+
+  &--detail
+    position: relative
+    top: 0
+    right: 0
 
 .nav
   display: flex
   align-items: center
   justify-content: space-between
   height: 40px
-  background-color: $background-secondary
-  color: $primary
+  background-color: $primary
 
   &__logout
     background-color: transparent
@@ -38,7 +52,7 @@ html, body
 .language
   margin: 0 5%
   width: 35%
-  background-color: $background-secondary
+  background-color: $primary
   font-size: 18px
 
 .landing
@@ -137,6 +151,7 @@ html, body
   margin-bottom: 2rem
   padding: 1rem
   border-radius: 1rem
+  position: relative
 
   &__title
     font-size: 1.2rem
@@ -151,4 +166,29 @@ html, body
   flex-direction: column
   justify-content: center
   align-items: center
+  position: relative
+  width: 100%
+
+  &__title-container
+    display: flex
+    flex-direction: row
+    align-items: center
+    justify-content: space-between
+    width: 85%
+
+  &__title
+    display: inline
+    width: 80%
+
+  &__image
+    width: 100%
+    margin: 0
+
+  &__description
+    width: 90%
+    text-align: justify
+
+  &__buy
+    background-color: white
+    border-style: solid
 

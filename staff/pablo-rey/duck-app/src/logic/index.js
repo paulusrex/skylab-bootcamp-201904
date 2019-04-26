@@ -66,14 +66,18 @@ const logic = {
         for (let key in data) {
           if (key === 'username') this.__user__.email = data[key];
           else if (key !==  'password') this.__user__[key]= data[key];
-        }
-        
+        }        
         return this.__user__;
-      });
+      })
+      .then(() => Promise.all(this.__user__.favoriteDucks.map(duckId => duckApi.retrieveDuck(duckId))))
+      .then(res => this.__user__.favoriteDucks = [...res])
+      .then(() => this.__user__);
   },
 
   updateUser() {
-    return userApi.update(this.__userId__, this.__token__, this.__user__)
+    const user = {...this.__user__, favoriteDucks: this.__user__.favoriteDucks.map(duck => duck.id)};
+
+    return userApi.update(this.__userId__, this.__token__, user)
   },
 
   logout() {

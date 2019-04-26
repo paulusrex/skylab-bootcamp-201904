@@ -1,5 +1,6 @@
 import React from 'react'
 import logic from '../../logic'
+import Favorite from '../Favorite'
 
 function CardDuck({ item, onDetail, onToggleFavorite }) {
   function onSelect(e) {
@@ -12,7 +13,7 @@ function CardDuck({ item, onDetail, onToggleFavorite }) {
       <img src={item.imageUrl} className="duck-item__image" onClick={onSelect} />
       <h3 className="duck-item__title">{item.title}</h3>
       <span className="duck-item__price">{item.price}</span>
-      <i className={`fas fa-heart ${item.isFavorite ? 'favoriteOn' : ''}`} onClick={() => onToggleFavorite(item)}></i>
+      <Favorite item={item} isFavorite={item.isFavorite} onClickFavorite={onToggleFavorite}/>
     </li>
   );
 }

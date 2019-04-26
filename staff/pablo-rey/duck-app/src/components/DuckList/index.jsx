@@ -4,7 +4,7 @@ import CardDuck from '../CardDuck'
 function DuckList({ items, onDetail, onToggleFavorite }) {
   if (items.length === 0) return <></>;
   return (
-    <ul>
+    <ul className="duck-list">
       {items.map(item => (
         <CardDuck onToggleFavorite={onToggleFavorite} key={item.id} item={item} onDetail={onDetail} />
       ))}

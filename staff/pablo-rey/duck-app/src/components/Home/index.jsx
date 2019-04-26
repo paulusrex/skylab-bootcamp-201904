@@ -10,11 +10,12 @@ function Home(props) {
   const [detailDuck, setDetailDuck] = useState(null);
 
   const handleSearch = searchText => {
-    logic.searchDucks(searchText)
-      .then(ducks => {
-        setItems(ducks.map(duck => ({...duck, isFavorite: logic.isFavorite(duck)})));
+    setDetailDuck(null);
+    return Promise.all([logic.retrieveUser(), logic.searchDucks(searchText)])
+      .then(([_,ducks]) => {
+        return setItems(ducks.map(duck => ({...duck, isFavorite: logic.isFavorite(duck)})));
       });
-  };
+    };
 
   const handleDetail = duck => {
     logic.retrieveDuck(duck.id)
@@ -29,7 +30,7 @@ function Home(props) {
   }
 
   return (
-    <>
+    <div className="home">
       <h2>Hello, {props.name}!</h2>
       <Search
         cssClass="home__search"
@@ -50,7 +51,7 @@ function Home(props) {
           onBuy={() => {}}
         />
       )}
-    </>
+    </div>
   );
 }
 
