@@ -11,6 +11,10 @@ html, body {
   font-family: "Raleway", sans-serif;
 }
 
+.favoriteOn {
+  color: red;
+}
+
 .nav {
   display: flex;
   align-items: center;

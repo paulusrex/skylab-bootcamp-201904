@@ -11,13 +11,22 @@ function Home(props) {
 
   const handleSearch = searchText => {
     logic.searchDucks(searchText)
-      .then(ducks => setItems([...ducks]));
+      .then(ducks => {
+        setItems(ducks.map(duck => ({...duck, isFavorite: logic.isFavorite(duck)})));
+      });
   };
 
   const handleDetail = duck => {
     logic.retrieveDuck(duck.id)
     .then(duckDetail => setDetailDuck(duckDetail))
   };
+  
+  const handleToggleFavorite = (toggleDuck) => {
+    logic.toggleFavorite(toggleDuck)
+    setItems(items.map(duck => ({ ...duck, 
+        isFavorite: toggleDuck.id === duck.id ? !duck.isFavorite : duck.isFavorite }))
+        );
+  }
 
   return (
     <>
@@ -29,10 +38,14 @@ function Home(props) {
         onSearch={handleSearch}
       />
       {!detailDuck ? (
-        <DuckList items={items} onDetail={handleDetail} />
+        <DuckList 
+          items={items} 
+          onDetail={handleDetail} 
+          onToggleFavorite={handleToggleFavorite}/>
       ) : (
         <DuckDetail
           duck={detailDuck}
+          onToggleFavorite={handleToggleFavorite}
           onBack={() => setDetailDuck(null)}
           onBuy={() => {}}
         />

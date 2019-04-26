@@ -117,8 +117,8 @@ const userApi = {
 
     return fetch( `${this.__url__}/user/${userId}`,{
       method: "PUT",
-      headers: { Authorization: `Bearer ${token}` },
-      body: fields,
+      headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
     }).then( res => res.json());
   },
 };

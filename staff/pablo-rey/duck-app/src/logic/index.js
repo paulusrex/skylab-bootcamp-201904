@@ -82,15 +82,18 @@ const logic = {
   },
 
   isFavorite: (duck) => {
-    return this.favoriteDucks.includes(duck.id);
+    if (!logic.__user__.favoriteDucks) return false;
+    const index = logic.__user__.favoriteDucks.findIndex(_duck => _duck.id === duck.id)
+    return index !== -1;
   },
 
   toggleFavorite: (toggleDuck) => {
-    const index = this.favoriteDucks.findIndex(duck => duck.id === toggleDuck.id);
-    if (index === -1) {
-      this.favoriteDucks.splice(index,1)
+    if (!logic.__user__.favoriteDucks) logic.__user__.favoriteDucks = [];
+    const index = logic.__user__.favoriteDucks.findIndex(duck => duck.id === toggleDuck.id);
+    if (index !== -1) {
+      logic.__user__.favoriteDucks.splice(index,1)
     } else  {
-      this.favoriteDucks.push(toggleDuck);
+      logic.__user__.favoriteDucks.push(toggleDuck);
     }
     logic.updateUser();
   },

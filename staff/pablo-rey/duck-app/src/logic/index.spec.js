@@ -354,7 +354,7 @@ describe("logic", () => {
       let username;
       const password = randomString();
       
-      it("should succeed on correct user data", () => {
+      it("should succeed on correct user data", (done) => {
         let id;
         let token;
         let user;
@@ -378,8 +378,8 @@ describe("logic", () => {
           .then(() => logic.updateUser())
           .then(() => userApi.retrieve(id, token))
           .then((res) => {
-            expect(res.data).toEqual(fields)
-            return res;
+            expect(res.data).toEqual(fields);
+            done();
           });
       });
   

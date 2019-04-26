@@ -69,11 +69,11 @@ class App extends Component {
       <>
         <nav className="nav">
           <LanguageSelector onLanguageChange={this.onLanguageChange} lang={this.state.selectedLanguage}/>
-          <LogOut
+          {logic.isLogged && <LogOut
             onLogout={this.onLogout}
             literals={i18n.logout}
             selectedLanguage={state.selectedLanguage}
-          />
+          />}
         </nav>
         {state.viewState === "landing" && (
           <Landing
