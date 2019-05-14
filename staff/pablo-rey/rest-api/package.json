@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@types/jest": "^24.0.13",
     "atob": "^2.1.2",
     "axios": "^0.18.0",
     "body-parser": "^1.19.0",
@@ -20,7 +21,8 @@
     "watch": "nodemon .",
     "debug": "node debug .",
     "test": "jest",
-    "test:debug": "node debug node_modules/.bin/jest --runInBand --watchAll"
+    "test:debug": "node debug node_modules/.bin/jest --runInBand --watchAll",
+    "test:inspect": "node --inspect-brk node_modules/.bin/jest node --runInBand --watchAll"
   },
   "keywords": [],
   "author": "",
