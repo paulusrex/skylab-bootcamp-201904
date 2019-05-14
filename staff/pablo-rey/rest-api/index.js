@@ -26,13 +26,13 @@ app.post('/user', jsonParser, (req, res) => {
 });
 
 app.get('/user/', (req, res) => {
-  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' }); 
+  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' });
   const token = req.get('Authorization').split(' ')[1];
-  
+
   try {
     logic
       .retrieveUser(token)
-      .then((userData) => res.json(userData))
+      .then(userData => res.json(userData))
       .catch(({ message }) => res.status(400).json({ error: message }));
   } catch ({ message }) {
     res.status(400).json({ error: message });
@@ -59,13 +59,13 @@ app.get('/duck/:id', (req, res) => {
     params: { id },
   } = req;
 
-  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' }); 
+  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' });
   const token = req.get('Authorization').split(' ')[1];
 
   try {
     logic
       .retrieveDuck(token, id)
-      .then((duckData) => res.json(duckData))
+      .then(duckData => res.json(duckData))
       .catch(({ message }) => res.status(400).json({ error: message }));
   } catch ({ message }) {
     res.status(400).json({ error: message });
@@ -74,16 +74,16 @@ app.get('/duck/:id', (req, res) => {
 
 app.get('/ducks', (req, res) => {
   const {
-    query: { query }
+    query: { query },
   } = req;
 
-  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' }); 
+  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' });
   const token = req.get('Authorization').split(' ')[1];
 
   try {
     logic
       .searchDucks(token, query)
-      .then((duckList) => res.json(duckList))
+      .then(duckList => res.json(duckList))
       .catch(({ message }) => res.status(400).json({ error: message }));
   } catch ({ message }) {
     res.status(400).json({ error: message });
@@ -91,13 +91,13 @@ app.get('/ducks', (req, res) => {
 });
 
 app.get('/ducks/favs', (req, res) => {
-  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' }); 
+  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' });
   const token = req.get('Authorization').split(' ')[1];
 
   try {
     logic
       .retrieveFavDucks(token)
-      .then((duckList) => res.json(duckList))
+      .then(duckList => res.json(duckList))
       .catch(({ message }) => res.status(400).json({ error: message }));
   } catch ({ message }) {
     res.status(400).json({ error: message });
@@ -108,18 +108,19 @@ app.put('/ducks/favs/toggle/:id', (req, res) => {
   const {
     params: { id },
   } = req;
-  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' }); 
+  if (!req.get('Authorization')) res.status(400).json({ error: 'no auth provided' });
   const token = req.get('Authorization').split(' ')[1];
 
   try {
     logic
       .toggleFavDuck(token, id)
-      .then(() => res.json({status: 'OK'}))
+      .then(() => res.json({ status: 'OK' }))
       .catch(({ message }) => res.status(400).json({ error: message }));
   } catch ({ message }) {
     res.status(400).json({ error: message });
   }
 });
+JSON.s;
 
 app.use(function(req, res, next) {
   debugger;

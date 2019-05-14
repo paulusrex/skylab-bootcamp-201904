@@ -1,11 +1,11 @@
-const atob = require('atob')
+const atob = require('atob');
 
 const token = {
-    payload(token) {
-        const [, rawPayload] = token.split('.')
+  payload(token) {
+    const [, rawPayload] = token.split('.');
 
-        return JSON.parse(atob(rawPayload))
-    }
-}
+    return JSON.parse(atob(rawPayload));
+  },
+};
 
-module.exports = token
+module.exports = token;

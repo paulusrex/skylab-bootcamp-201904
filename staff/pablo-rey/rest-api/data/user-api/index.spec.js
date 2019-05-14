@@ -7,7 +7,7 @@ const {
 } = require('../../common/errors');
 const atob = require('atob');
 
-describe('user api', () => {
+fdescribe('user api', () => {
   const name = 'Manuel';
   const surname = 'Barzi';
   let username;
@@ -18,6 +18,7 @@ describe('user api', () => {
   describe('create', () => {
     it('should succeed on correct user data', () =>
       userApi.create(username, password, { name, surname }).then(response => {
+        debugger;
         expect(response).toBeDefined();
 
         const { status, data } = response;
