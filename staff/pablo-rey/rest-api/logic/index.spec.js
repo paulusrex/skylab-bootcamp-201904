@@ -270,7 +270,39 @@ describe('logic', () => {
             expect(userData.password).toBeUndefined();
           });
       });
+
+      it('should succeed on update password ', () => {
+        const randomPassword = 'new-test-password';
+        return logic
+          .updateUser(token, undefined, undefined, undefined, randomPassword)
+          .then(() => userApi.authenticate(email, randomPassword))
+          .then(({status}) => expect(status).toBe('OK'));
+      });     
     });
+
+    describe('delete user', () => {
+      let id, token;
+
+      beforeEach(() =>
+        userApi
+          .create(email, password, { name, surname })
+          .then(response => {
+            id = response.data.id;
+
+            return userApi.authenticate(email, password);
+          })
+          .then(response => {
+            token = response.data.token;
+          })
+      );
+
+      it('should succeed on delete an user ', () => {
+        return logic
+          .deleteUser(token)
+          .then(() => userApi.authenticate(email, password))
+          .then(({status}) => expect(status).toBe('KO'));
+      });     
+    });    
 
     describe('toggle fav duck', () => {
       let id, token, duckId;

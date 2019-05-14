@@ -65,13 +65,32 @@ const logic = {
     let data = {};
     if (name) data = { name };
     if (surname) data = { ...data, surname };
-    if (email) data = { ...data, surname };
+    if (email) data = { ...data, username: email };
     if (password) data = { ...data, password };
 
     return userApi.update(id, token, data).then(response => {
       if (response.status === 'OK') return;
       else throw new LogicError(response.error);
     });
+  },
+
+  deleteUser(token) {
+    validate.arguments([{ name: 'token', value: token, type: 'string', notEmpty: true }]);
+
+    const { id } = _token.payload(token);
+    let email;
+
+    return logic
+      .retrieveUser(token)
+      .then(({ email: _email }) => {
+        email = _email;
+        return logic.updateUser(token, undefined, undefined, undefined, 'delete');
+      })
+      .then(() => userApi.delete(id, token, email, 'delete'))
+      .then(({ status, error }) => {
+        if (status === 'OK') return;
+        else throw new LogicError(error);
+      });
   },
 
   searchDucks(token, query) {
