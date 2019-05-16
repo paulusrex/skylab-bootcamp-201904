@@ -5,6 +5,10 @@ const { LogicError, UnknownError } = require('../common/errors');
 const _token = require('../common/token');
 
 const logic = {
+  parseId (token) {
+    return _token.payload(token).id;
+  },
+
   registerUser(name, surname, email, password) {
     validate.arguments([
       { name: 'name', value: name, type: 'string', notEmpty: true },
