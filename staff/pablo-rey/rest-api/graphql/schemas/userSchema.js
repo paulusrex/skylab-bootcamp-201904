@@ -17,8 +17,8 @@ const typeDefs = gql`
   }
   type Mutation {
     createUser(email: String!, name: String!, surname: String!, password: String!): Boolean!
-    updateUser(email: String, name: String, surname: String, password: String): User!
-    deleteUser(id: ID!): User!
+    updateUser(email: String, name: String, surname: String, password: String): Boolean!
+    deleteUser: Boolean!
   }
 `;
 
@@ -47,10 +47,12 @@ const resolvers = {
     async updateUser(parent, args, { token }, info) {
       const { email, name, surname, password } = args;
 
-      return await logic.updateUser(token, name, surname, email, password);
+      const result =  await logic.updateUser(token, name, surname, email, password);
+      return !result
     },
     async deleteUser(parent, args, { token }, info) {
-      return await logic.deleteUser(token);
+      const result = await logic.deleteUser(token);
+      return !result;
     },
   },
 };
