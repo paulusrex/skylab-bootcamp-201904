@@ -1,8 +1,13 @@
 //@ts-check
+require('dotenv').config();
+
 const logic = require('.');
+const fs = require('fs').promises;
 const { LogicError, RequirementError, ValueError, FormatError } = require('../common/errors');
-const userApi = require('../data/user-api');
+// const userApi = require('../data/user-api');
 const duckApi = require('../data/duck-api');
+const userData = require('../data/user-data');
+const path = require('path');
 const atob = require('atob');
 
 describe('logic', () => {
@@ -11,17 +16,35 @@ describe('logic', () => {
   let email;
   const password = '123';
 
-  beforeEach(() => (email = `manuelbarzi-${Math.random()}@gmail.com`));
+  beforeAll(() => (userData.__file__ = path.join(__dirname, 'users_tst.json')));
+  beforeEach(() => {
+    userData.__users__ = undefined;
+    email = `test-${Math.random()}@gmail.com`;
+  });
+  afterAll(() => fs.writeFile(userData.__file__, '[]'));
 
   describe('users', () => {
     describe('register user', () => {
-      it('should succeed on correct user data', () =>
-        logic
-          .registerUser(name, surname, email, password)
-          .then(response => expect(response).toBeUndefined()));
+      beforeEach(() => fs.writeFile(userData.__file__, '[]'));
+
+      it('should succeed on correct user data', () => {
+        const baseUser = { name, surname, email };
+        return logic.registerUser(name, surname, email, password).then(user => {
+          expect(user).toBeDefined();
+          expect(user).toMatchObject(baseUser);
+          return userData.find(baseUser).then(users => {
+            expect(users).toHaveLength(1);
+            expect(users[0]).toMatchObject(baseUser);
+          });
+        });
+      });
 
       describe('on already existing user', () => {
-        beforeEach(() => logic.registerUser(name, surname, email, password));
+        beforeEach(() =>
+          fs
+            .writeFile(userData.__file__, '[]')
+            .then(() => logic.registerUser(name, surname, email, password))
+        );
 
         it('should fail on retrying to register', () =>
           logic
@@ -33,7 +56,7 @@ describe('logic', () => {
               expect(error).toBeDefined();
               expect(error instanceof LogicError).toBeTruthy();
 
-              expect(error.message).toBe(`user with username \"${email}\" already exists`);
+              expect(error.message).toBe(`user with email \"${email}\" already registered`);
             }));
       });
 
@@ -41,8 +64,7 @@ describe('logic', () => {
         const name = undefined;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `name is not optional`
+          new RequirementError(`name is not optional`)
         );
       });
 
@@ -50,8 +72,7 @@ describe('logic', () => {
         const name = null;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `name is not optional`
+          new RequirementError(`name is not optional`)
         );
       });
 
@@ -59,8 +80,7 @@ describe('logic', () => {
         const name = '';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'name is empty'
+          new ValueError('name is empty')
         );
       });
 
@@ -68,8 +88,7 @@ describe('logic', () => {
         const name = ' \t    \n';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'name is empty'
+          new ValueError('name is empty')
         );
       });
 
@@ -77,8 +96,7 @@ describe('logic', () => {
         const surname = undefined;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `surname is not optional`
+          new RequirementError(`surname is not optional`)
         );
       });
 
@@ -86,8 +104,7 @@ describe('logic', () => {
         const surname = null;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `surname is not optional`
+          new RequirementError(`surname is not optional`)
         );
       });
 
@@ -95,8 +112,7 @@ describe('logic', () => {
         const surname = '';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'surname is empty'
+          new ValueError('surname is empty')
         );
       });
 
@@ -104,8 +120,7 @@ describe('logic', () => {
         const surname = ' \t    \n';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'surname is empty'
+          new ValueError('surname is empty')
         );
       });
 
@@ -113,8 +128,7 @@ describe('logic', () => {
         const email = undefined;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `email is not optional`
+          new RequirementError(`email is not optional`)
         );
       });
 
@@ -122,8 +136,7 @@ describe('logic', () => {
         const email = null;
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          RequirementError,
-          `email is not optional`
+          new RequirementError(`email is not optional`)
         );
       });
 
@@ -131,8 +144,7 @@ describe('logic', () => {
         const email = '';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'email is empty'
+          new ValueError('email is empty')
         );
       });
 
@@ -140,8 +152,7 @@ describe('logic', () => {
         const email = ' \t    \n';
 
         expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          ValueError,
-          'email is empty'
+          new ValueError('email is empty')
         );
       });
 
@@ -149,8 +160,7 @@ describe('logic', () => {
         const nonEmail = 'non-email';
 
         expect(() => logic.registerUser(name, surname, nonEmail, password)).toThrowError(
-          FormatError,
-          `${nonEmail} is not an e-mail`
+          new FormatError(`${nonEmail} is not an e-mail`)
         );
       });
 
@@ -159,9 +169,11 @@ describe('logic', () => {
 
     describe('authenticate user', () => {
       let id;
-
       beforeEach(() =>
-        userApi.create(email, password, { name, surname }).then(response => (id = response.data.id))
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(user => (id = user.id))
       );
 
       it('should succeed on correct user credential', () =>
@@ -184,181 +196,174 @@ describe('logic', () => {
           })
           .catch(error => {
             expect(error).toBeDefined();
-            expect(error instanceof LogicError).toBeTruthy();
+            expect(error).toBeInstanceOf(LogicError);
+            expect(error.message).toBe(`user with email "${email}" does not exist`);
+          }));
 
-            expect(error.message).toBe(`user with username \"${email}\" does not exist`);
+      it('should fail on non-existing user', () =>
+        logic
+          .authenticateUser(email, 'wrong-password')
+          .then(() => {
+            throw Error('should not reach this point');
+          })
+          .catch(error => {
+            expect(error).toBeDefined();
+            expect(error).toBeInstanceOf(LogicError);
+            expect(error.message).toBe(`wrong credentials`);
           }));
     });
 
     describe('retrieve user', () => {
-      let id, token;
-
+      let id;
       beforeEach(() =>
-        userApi
-          .create(email, password, { name, surname })
-          .then(response => {
-            id = response.data.id;
-
-            return userApi.authenticate(email, password);
-          })
-          .then(response => {
-            token = response.data.token;
-          })
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(user => (id = user.id))
       );
 
       it('should succeed on correct user id and token', () =>
-        logic.retrieveUser(token).then(user => {
-          expect(user.id).toBeUndefined();
+        logic.retrieveUser(id).then(user => {
+          expect(user.id).toBeDefined();
           expect(user.name).toBe(name);
           expect(user.surname).toBe(surname);
           expect(user.email).toBe(email);
           expect(user.password).toBeUndefined();
         }));
+
+      it('should fail on non-existing user', () =>
+        logic
+          .retrieveUser('somewrongrandomid')
+          .then(() => {
+            throw Error('should not reach this point');
+          })
+          .catch(error => {
+            expect(error).toBeDefined();
+            expect(error).toBeInstanceOf(LogicError);
+            expect(error.message).toBe(`user with id "${'somewrongrandomid'}" does not exists`);
+          }));
     });
 
     describe('update user', () => {
-      let id, token;
-
+      let id;
       beforeEach(() =>
-        userApi
-          .create(email, password, { name, surname })
-          .then(response => {
-            id = response.data.id;
-
-            return userApi.authenticate(email, password);
-          })
-          .then(response => {
-            token = response.data.token;
-          })
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(user => (id = user.id))
       );
 
       it('should succeed on update name ', () => {
         const randomName = 'new test name';
         return logic
-          .updateUser(token, randomName)
-          .then(() => userApi.retrieve(id, token))
-          .then(({ data: userData }) => {
-            expect(userData.name).toBe(randomName);
-            expect(userData.surname).toBe(surname);
-            expect(userData.username).toBe(email);
-            expect(userData.password).toBeUndefined();
+          .updateUser(id, randomName)
+          .then(() => userData.retrieve(id))
+          .then(user => {
+            expect(user.name).toBe(randomName);
+            expect(user.surname).toBe(surname);
+            expect(user.email).toBe(email);
+            expect(user.password).toBe(password);
           });
       });
 
       it('should succeed on update surname ', () => {
         const randomSurname = 'new test surname';
         return logic
-          .updateUser(token, undefined, randomSurname)
-          .then(() => userApi.retrieve(id, token))
-          .then(({ data: userData }) => {
-            expect(userData.name).toBe(name);
-            expect(userData.surname).toBe(randomSurname);
-            expect(userData.username).toBe(email);
-            expect(userData.password).toBeUndefined();
+          .updateUser(id, undefined, randomSurname)
+          .then(() => userData.retrieve(id))
+          .then(user => {
+            expect(user.name).toBe(name);
+            expect(user.surname).toBe(randomSurname);
+            expect(user.email).toBe(email);
+            expect(user.password).toBe(password);
           });
       });
 
       it('should succeed on update email ', () => {
         const randomEmail = 'new-test-email-' + email;
         return logic
-          .updateUser(token, undefined, undefined, randomEmail)
-          .then(() => userApi.retrieve(id, token))
-          .then(({ data: userData }) => {
-            expect(userData.name).toBe(name);
-            expect(userData.surname).toBe(surname);
-            expect(userData.username).toBe(randomEmail);
-            expect(userData.password).toBeUndefined();
+          .updateUser(id, undefined, undefined, randomEmail)
+          .then(() => userData.retrieve(id))
+          .then(user => {
+            expect(user.name).toBe(name);
+            expect(user.surname).toBe(surname);
+            expect(user.email).toBe(randomEmail);
+            expect(user.password).toBe(password);
           });
       });
 
       it('should succeed on update password ', () => {
         const randomPassword = 'new-test-password';
         return logic
-          .updateUser(token, undefined, undefined, undefined, randomPassword)
-          .then(() => userApi.authenticate(email, randomPassword))
-          .then(({status}) => expect(status).toBe('OK'));
-      });     
+          .updateUser(id, undefined, undefined, undefined, randomPassword)
+          .then(() => userData.retrieve(id))
+          .then(user => {
+            expect(user.name).toBe(name);
+            expect(user.surname).toBe(surname);
+            expect(user.email).toBe(email);
+            expect(user.password).toBe(randomPassword);
+          });
+      });
     });
 
     describe('delete user', () => {
-      let id, token;
-
+      let id;
       beforeEach(() =>
-        userApi
-          .create(email, password, { name, surname })
-          .then(response => {
-            id = response.data.id;
-
-            return userApi.authenticate(email, password);
-          })
-          .then(response => {
-            token = response.data.token;
-          })
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(user => (id = user.id))
       );
 
       it('should succeed on delete an user ', () => {
         return logic
-          .deleteUser(token)
-          .then(() => userApi.authenticate(email, password))
-          .then(({status}) => expect(status).toBe('KO'));
-      });     
-    });    
+          .deleteUser(id)
+          .then(() => userData.list())
+          .then(users => expect(users).toHaveLength(0));
+      });
+    });
 
     describe('toggle fav duck', () => {
-      let id, token, duckId;
+      let id, duckId;
 
-      beforeEach(() => {
-        duckId = `${Math.random()}`;
-
-        return userApi
-          .create(email, password, { name, surname })
-          .then(response => {
-            id = response.data.id;
-
-            return userApi.authenticate(email, password);
-          })
-          .then(response => {
-            token = response.data.token;
-          });
-      });
+      beforeEach(() =>
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(user => (id = user.id))
+          .then(() => duckApi.searchDucks(''))
+          .then(ducks => ducks[Math.floor(Math.random() * ducks.length)])
+          .then(duck => (duckId = duck.id))
+      );
 
       it('should succeed adding fav on first time', () =>
         logic
-          .toggleFavDuck(token, duckId)
+          .toggleFavDuck(id, duckId)
           .then(response => expect(response).toBeUndefined())
-          .then(() => userApi.retrieve(id, token))
-          .then(response => {
-            const {
-              data: { favs },
-            } = response;
-
+          .then(() => userData.retrieve(id))
+          .then(({ favs }) => {
             expect(favs).toBeDefined();
-            expect(favs instanceof Array).toBeTruthy();
+            expect(favs).toBeInstanceOf(Array);
             expect(favs.length).toBe(1);
             expect(favs[0]).toBe(duckId);
           }));
 
       it('should succeed removing fav on second time', () =>
         logic
-          .toggleFavDuck(token, duckId)
-          .then(() => logic.toggleFavDuck(token, duckId))
-          .then(() => userApi.retrieve(id, token))
-          .then(response => {
-            const {
-              data: { favs },
-            } = response;
-
+          .toggleFavDuck(id, duckId)
+          .then(() => logic.toggleFavDuck(id, duckId))
+          .then(() => userData.retrieve(id))
+          .then(({ favs }) => {
             expect(favs).toBeDefined();
-            expect(favs instanceof Array).toBeTruthy();
+            expect(favs).toBeInstanceOf(Array);
             expect(favs.length).toBe(0);
           }));
 
       it('should fail on null duck id', () => {
         duckId = null;
 
-        expect(() => logic.toggleFavDuck(token, duckId)).toThrowError(
-          RequirementError,
-          'id is not optional'
+        expect(() => logic.toggleFavDuck(duckId)).toThrowError(
+          new RequirementError('userId is not optional')
         );
       });
 
@@ -366,36 +371,24 @@ describe('logic', () => {
     });
 
     describe('retrieve fav ducks', () => {
-      let token, _favs;
+      let id, user, duckIds;
 
-      beforeEach(() => {
-        _favs = [];
+      beforeEach(() =>
+        fs
+          .writeFile(userData.__file__, '[]')
+          .then(() => userData.create({ name, surname, email, password }))
+          .then(_user => (user = _user))
+          .then(_user => (id = _user.id))
+          .then(() => duckApi.searchDucks(''))
+          .then(ducks => ducks.map(duck => (Math.random() < 0.2 ? duck.id : null)))
+          .then(_duckIds => (duckIds = _duckIds.filter(id => !!id)))
+          .then(() => userData.update(id, { favs: duckIds }))
+      );
 
-        return duckApi
-          .searchDucks('')
-          .then(ducks => {
-            for (let i = 0; i < 10; i++) {
-              const randomIndex = Math.floor(Math.random() * ducks.length);
-
-              _favs[i] = ducks.splice(randomIndex, 1)[0].id;
-            }
-
-            return userApi.create(email, password, { name, surname, favs: _favs });
-          })
-          .then(response => {
-            id = response.data.id;
-
-            return userApi.authenticate(email, password);
-          })
-          .then(response => {
-            token = response.data.token;
-          });
-      });
-
-      it('should succeed adding fav on first time', () =>
-        logic.retrieveFavDucks(token).then(ducks => {
-          ducks.forEach(({ id, title, imageUrl, description, price }) => {
-            const isFav = _favs.some(fav => fav === id);
+      it('should succeed retrieving all ducks with detail', () =>
+        logic.retrieveFavDucks(id).then(favs => {
+          favs.forEach(({ id, title, imageUrl, description, price }) => {
+            const isFav = favs.some(fav => fav.id === id);
 
             expect(isFav).toBeTruthy();
             expect(typeof title).toBe('string');
@@ -412,24 +405,9 @@ describe('logic', () => {
   });
 
   describe('ducks', () => {
-    let token;
-
-    beforeEach(() => {
-      return userApi
-        .create(email, password, { name, surname })
-        .then(response => {
-          id = response.data.id;
-
-          return userApi.authenticate(email, password);
-        })
-        .then(response => {
-          token = response.data.token;
-        });
-    });
-
     describe('search ducks', () => {
       it('should succeed on correct query', () =>
-        logic.searchDucks(token, 'yellow').then(ducks => {
+        logic.searchDucks('yellow').then(ducks => {
           expect(ducks).toBeDefined();
           expect(ducks instanceof Array).toBeTruthy();
           expect(ducks.length).toBe(13);

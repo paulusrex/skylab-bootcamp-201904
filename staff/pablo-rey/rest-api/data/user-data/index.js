@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const fs = require('fs').promises;
 const path = require('path');
 const uuid = require('uuid/v4');
@@ -8,12 +10,14 @@ const userData = {
   __file__: path.join(__dirname, 'users.json'),
 
   __load__() {
-    return fs.readFile(this.__file__, 'utf8').then(JSON.parse);
+    return this.__users__ ? Promise.resolve(this.__users__) : fs.readFile(this.__file__, 'utf8')
+      .then(res => JSON.parse(res)) 
+      .then(users => this.__users__ = users);
   },
 
-  __save__(data) {
-    return fs.writeFile(this.__file__, JSON.stringify(data))
-  }
+  __save__() {
+    return fs.writeFile(this.__file__, JSON.stringify(this.__users__ = this.__users__ || []))
+  },
 
   create(user) {
     validate.arguments([{ name: 'user', value: user, type: 'object', optional: false }]);

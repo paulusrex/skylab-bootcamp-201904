@@ -1,8 +1,9 @@
 const { makeExecutableSchema } = require('graphql-tools');
 const { gql } = require('apollo-server-express');
 const logic = require('../../logic');
-const { LogicError } = require('../../common/errors')
-const { UserInputError } = require( 'apollo-server')
+const { LogicError } = require('../../common/errors');
+const { UserInputError, AuthenticationError } = require('apollo-server');
+const userData = require('../../data/user-data')
 
 const typeDefs = gql`
   type User {
@@ -24,12 +25,12 @@ const typeDefs = gql`
 
 const resolvers = {
   Query: {
-    async users(parent, args, context, info) {
-      // return await User.find();
+    async users(parent, args, { token }, info) {
+      if (!logic.verifyToken(token)) throw new AuthenticationError('wrong/missing credentials');
+      return await userData.list();
     },
-    async user(parent, args, context, info) {
-      const { token } = context;
-      const result = await logic.retrieveUser(token);
+    async user(parent, args, { token }, info) {
+      const result = await logic.retrieveUser(logic.parseId(token));
       return { ...result, id: logic.parseId(token) };
     },
   },
@@ -38,7 +39,7 @@ const resolvers = {
       const { email, name, surname, password } = args;
       let result = {};
       try {
-        result = await logic.registerUser(name, surname, email, password); 
+        result = await logic.registerUser(name, surname, email, password);
       } catch (error) {
         throw new UserInputError(error.message);
       }
@@ -47,8 +48,10 @@ const resolvers = {
     async updateUser(parent, args, { token }, info) {
       const { email, name, surname, password } = args;
 
-      const result =  await logic.updateUser(token, name, surname, email, password);
-      return !result
+      if (logic.verifyToken(token)) throw new AuthenticationError('wrong/missing credentials');
+
+      const result = await logic.updateUser(token, name, surname, email, password);
+      return !result;
     },
     async deleteUser(parent, args, { token }, info) {
       const result = await logic.deleteUser(token);

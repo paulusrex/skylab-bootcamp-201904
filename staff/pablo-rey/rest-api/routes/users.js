@@ -29,19 +29,17 @@ router.put('/users', jsonParser, (req, res) => {
     headers: { authorization },
   } = req;
 
-  handleErrors(
-    () => {
-      if (!authorization) throw new UnauthorizedError();
+  handleErrors(() => {
+    if (!authorization) throw new UnauthorizedError();
 
-      const token = authorization.slice(7);
-  
-      if (!token) throw new UnauthorizedError();
-      logic
-        .updateUser(token, name, surname, email, password)
-        .then(() => res.status(201).json({ message: 'Ok, user updated. ' }));
-    },
-    res
-  );
+    const token = authorization.slice(7);
+
+    if (!token) throw new UnauthorizedError();
+    return logic
+      .verifyToken(token)
+      .then(({ id }) => logic.updateUser(id, name, surname, email, password))
+      .then(() => res.status(201).json({ message: 'Ok, user updated. ' }));
+  }, res);
 });
 
 router.delete('/users', (req, res) => {
@@ -49,19 +47,17 @@ router.delete('/users', (req, res) => {
     headers: { authorization },
   } = req;
 
-  handleErrors(
-    () => {
-      if (!authorization) throw new UnauthorizedError();
+  handleErrors(() => {
+    if (!authorization) throw new UnauthorizedError();
 
-      const token = authorization.slice(7);
-  
-      if (!token) throw new UnauthorizedError();
-      logic
-        .deleteUser(token)
-        .then(() => res.status(201).json({ message: 'Ok, user deleted. ' }));
-    },
-    res
-  );
+    const token = authorization.slice(7);
+
+    if (!token) throw new UnauthorizedError();
+    return logic
+      .verifyToken(token)
+      .then(({ id }) => logic.deleteUser(id))
+      .then(() => res.status(201).json({ message: 'Ok, user deleted. ' }));
+  }, res);
 });
 
 router.get('/users', (req, res) => {
@@ -75,8 +71,14 @@ router.get('/users', (req, res) => {
     const token = authorization.slice(7);
 
     if (!token) throw new UnauthorizedError();
-
-    return logic.retrieveUser(token).then(user => res.json(user));
+    return logic
+      .verifyToken(token)
+      .then(({ id }) => logic.retrieveUser(id))
+      .then(user => {
+        delete user.password;
+        return user;
+      })
+      .then(user => res.json(user));
   }, res);
 });
 
@@ -90,7 +92,5 @@ router.post('/users/auth', jsonParser, (req, res) => {
     res
   );
 });
-
-
 
 module.exports = router;

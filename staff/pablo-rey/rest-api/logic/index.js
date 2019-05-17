@@ -1,11 +1,21 @@
+const jwt = require('jsonwebtoken');
 const validate = require('../common/validate');
-const userApi = require('../data/user-api');
+const userData = require('../data/user-data');
 const duckApi = require('../data/duck-api');
-const { LogicError, UnknownError } = require('../common/errors');
+const { LogicError, UnknownError, UnauthorizedError } = require('../common/errors');
 const _token = require('../common/token');
 
 const logic = {
-  parseId (token) {
+  __signToken__(user) {
+      if (!user) throw new UnauthorizedError('invalid credentials');
+      return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  },
+  verifyToken(token) {
+    if (!token) return false;
+    return jwt.verify(token, process.env.JWT_SECRET);
+  },
+
+  parseId(token) {
     return _token.payload(token).id;
   },
 
@@ -19,9 +29,19 @@ const logic = {
 
     validate.email(email);
 
-    return userApi.create(email, password, { name, surname }).then(response => {
-      if (response.status === 'OK') return;
-      else throw new LogicError(response.error);
+    const user = {
+      name,
+      surname,
+      email,
+      password,
+    };
+    return userData.find({ email }).then(users => {
+      if (users.length) throw new LogicError(`user with email "${email}" already registered`);
+      return userData.create(user).then(user => {
+        const _user = { ...user };
+        delete _user.password;
+        return _user;
+      });
     });
   },
 
@@ -31,147 +51,97 @@ const logic = {
       { name: 'password', value: password, type: 'string', notEmpty: true },
     ]);
 
-    validate.email(email);
-
-    return userApi.authenticate(email, password).then(response => {
-      if (response.status === 'OK') return response.data.token;
-      else throw new LogicError(response.error);
+    return userData.find({ email }).then(users => {
+      if (!users.length) throw new LogicError(`user with email "${email}" does not exist`);
+      const user = users[0];
+      if (user.password !== password) throw new LogicError(`wrong credentials`);
+      return this.__signToken__(user);
     });
   },
 
-  retrieveUser(token) {
-    validate.arguments([{ name: 'token', value: token, type: 'string', notEmpty: true }]);
+  retrieveUser(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    const { id } = _token.payload(token);
-
-    return userApi.retrieve(id, token).then(response => {
-      if (response.status === 'OK') {
-        const {
-          data: { name, surname, username: email },
-        } = response;
-
-        return { name, surname, email };
-      } else throw new LogicError(response.error);
+    return userData.retrieve(id).then(user => {
+      if (!user) throw new LogicError(`user with id "${id}" does not exists`);
+      const _user = { ...user };
+      delete _user.password;
+      return _user;
     });
   },
 
-  updateUser(token, name, surname, email, password) {
+  updateUser(id, name, surname, email, password) {
     validate.arguments([
-      { name: 'token', value: token, type: 'string', notEmpty: true },
+      { name: 'id', value: id, type: 'string', notEmpty: true },
       { name: 'name', value: name, type: 'string', optional: true },
       { name: 'surname', value: surname, type: 'string', optional: true },
       { name: 'email', value: email, type: 'string', optional: true },
       { name: 'password', value: password, type: 'string', optional: true },
     ]);
 
-    const { id } = _token.payload(token);
+    // const { id } = _token.payload(token);
 
     let data = {};
     if (name) data = { name };
     if (surname) data = { ...data, surname };
-    if (email) data = { ...data, username: email };
+    if (email) data = { ...data, email };
     if (password) data = { ...data, password };
 
-    return userApi.update(id, token, data).then(response => {
-      if (response.status === 'OK') return;
-      else throw new LogicError(response.error);
+    return userData.update(id, data).then(user => {
+      const _user = { ...user };
+      delete _user.password;
+      return _user;
     });
   },
 
-  deleteUser(token) {
-    validate.arguments([{ name: 'token', value: token, type: 'string', notEmpty: true }]);
+  deleteUser(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    const { id } = _token.payload(token);
-    let email;
-
-    return logic
-      .retrieveUser(token)
-      .then(({ email: _email }) => {
-        email = _email;
-        return logic.updateUser(token, undefined, undefined, undefined, 'delete');
-      })
-      .then(() => userApi.delete(id, token, email, 'delete'))
-      .then(({ status, error }) => {
-        if (status === 'OK') return;
-        else throw new LogicError(error);
-      });
+    return userData.delete(id);
   },
 
-  searchDucks(token, query) {
-    validate.arguments([
-      { name: 'token', value: token, type: 'string', notEmpty: true },
-      { name: 'query', value: query, type: 'string' },
-    ]);
+  searchDucks(query) {
+    validate.arguments([{ name: 'query', value: query, type: 'string' }]);
 
-    const { id } = _token.payload(token);
+    return duckApi.searchDucks(query).then(ducks => (ducks instanceof Array ? ducks : []));
 
-    return userApi.retrieve(id, token).then(response => {
-      if (response.status === 'OK') {
-        return duckApi.searchDucks(query).then(ducks => (ducks instanceof Array ? ducks : []));
-      } else throw new LogicError(response.error);
+  },
+
+  retrieveDuck(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
+
+    return duckApi.retrieveDuck(id);
+
+  },
+
+  toggleFavDuck(userId, duck) {
+    validate.arguments([{ name: 'userId', value: userId, type: 'string' }]);
+
+    let duckId;
+    if (typeof duck === 'string') duckId = duck;
+    else if (duck.id) duckId = duck.id;
+    else throw TypeError(`duck is not a string or valid duck`);
+
+    return userData.retrieve(userId).then(user => {
+      const { favs = [] } = user;
+      const index = favs.indexOf(duckId);
+      if (index === -1) favs.push(duckId);
+      else favs.splice(index, 1);
+      return userData.update(user.id, {...user, favs}).then(user => undefined)
     });
+
   },
 
-  retrieveDuck(token, id) {
-    validate.arguments([
-      { name: 'token', value: token, type: 'string', notEmpty: true },
-      { name: 'id', value: id, type: 'string' },
-    ]);
+  retrieveFavDucks(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    const { id: _id } = _token.payload(token);
+    return userData.retrieve(id).then(user => {
+      const { favs } = user;
+      if (favs.length) {
+        const calls = favs.map(fav => duckApi.retrieveDuck(fav));
 
-    return userApi.retrieve(_id, token).then(response => {
-      if (response.status === 'OK') {
-        return duckApi.retrieveDuck(id);
-      } else throw new LogicError(response.error);
-    });
-  },
-
-  toggleFavDuck(token, id) {
-    validate.arguments([
-      { name: 'token', value: token, type: 'string', notEmpty: true },
-      { name: 'id', value: id, type: 'string' },
-    ]);
-
-    const { id: _id } = _token.payload(token);
-
-    return userApi.retrieve(_id, token).then(response => {
-      const { status, data } = response;
-
-      if (status === 'OK') {
-        const { favs = [] } = data;
-
-        const index = favs.indexOf(id);
-
-        if (index < 0) favs.push(id);
-        else favs.splice(index, 1);
-
-        return userApi.update(_id, token, { favs }).then(() => {});
-      }
-
-      throw new LogicError(response.error);
-    });
-  },
-
-  retrieveFavDucks(token) {
-    validate.arguments([{ name: 'token', value: token, type: 'string', notEmpty: true }]);
-
-    const { id: _id } = _token.payload(token);
-
-    return userApi.retrieve(_id, token).then(response => {
-      const { status, data } = response;
-
-      if (status === 'OK') {
-        const { favs = [] } = data;
-
-        if (favs.length) {
-          const calls = favs.map(fav => duckApi.retrieveDuck(fav));
-
-          return Promise.all(calls);
-        } else return favs;
-      }
-
-      throw new LogicError(response.error);
+        return Promise.all(calls);
+      } else return [];
     });
   },
 };

@@ -30,6 +30,7 @@ describe('user data', () => {
     },
   ];
 
+  beforeEach(() => userData.__users__ = undefined)
   afterAll(() => fs.writeFile(userData.__file__, '[]'));
 
   describe('create', () => {
