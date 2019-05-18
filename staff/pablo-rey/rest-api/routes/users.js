@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const logic = require('../logic');
 const handleErrors = require('./handle-errors');
-const { UnauthorizedError } = require('../common/errors');
+const auth = require('./auth');
 
 const jsonParser = bodyParser.json();
 
@@ -23,63 +23,42 @@ router.post('/users', jsonParser, (req, res) => {
   );
 });
 
-router.put('/users', jsonParser, (req, res) => {
+router.put('/users', auth, jsonParser, (req, res) => {
   const {
     body: { name, surname, email, password },
-    headers: { authorization },
+    userId,
   } = req;
 
-  handleErrors(() => {
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-    return logic
-      .verifyToken(token)
-      .then(({ id }) => logic.updateUser(id, name, surname, email, password))
-      .then(() => res.status(201).json({ message: 'Ok, user updated. ' }));
-  }, res);
+  handleErrors(() => 
+    logic.updateUser(userId, name, surname, email, password)
+      .then(() => res.status(201).json({ message: 'Ok, user updated. ' }))
+  , res);
 });
 
-router.delete('/users', (req, res) => {
+router.delete('/users', auth, (req, res) => {
   const {
     headers: { authorization },
+    userId
   } = req;
 
-  handleErrors(() => {
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-    return logic
-      .verifyToken(token)
-      .then(({ id }) => logic.deleteUser(id))
-      .then(() => res.status(201).json({ message: 'Ok, user deleted. ' }));
-  }, res);
+  handleErrors(() => logic.deleteUser(userId)
+      .then(() => res.status(201).json({ message: 'Ok, user deleted. ' }))
+  , res);
 });
 
-router.get('/users', (req, res) => {
-  handleErrors(() => {
-    const {
-      headers: { authorization },
-    } = req;
+router.get('/users', auth, (req, res) => {
+  const {
+    headers: { authorization },
+    userId,
+  } = req;
 
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-    return logic
-      .verifyToken(token)
-      .then(({ id }) => logic.retrieveUser(id))
+  handleErrors(() => logic.retrieveUser(userId)
       .then(user => {
         delete user.password;
         return user;
       })
-      .then(user => res.json(user));
-  }, res);
+      .then(user => res.json(user))
+  , res);
 });
 
 router.post('/users/auth', jsonParser, (req, res) => {

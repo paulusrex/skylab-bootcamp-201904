@@ -1,83 +1,42 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 const logic = require('../logic');
 const handleErrors = require('./handle-errors');
-const { UnauthorizedError } = require('../common/errors');
-
-const jsonParser = bodyParser.json();
+const auth = require('./auth');
 
 const router = express.Router();
 
-router.post('/ducks/:id/fav', (req, res) => {
-  handleErrors(() => {
-    const {
-      headers: { authorization },
-      params: { id },
-    } = req;
+router.post('/ducks/:id/fav', auth, (req, res) => {
+  const {
+    userId,
+    params: { id },
+  } = req;
 
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-
-    return logic.toggleFavDuck(token, id).then(() => res.json({ message: 'Ok, duck toggled.' }));
-  }, res);
+  handleErrors(
+    () => logic.toggleFavDuck(userId, id).then(() => res.json({ message: 'Ok, duck toggled.' })),
+    res
+  );
 });
 
-router.get('/ducks/fav', (req, res) => {
-  handleErrors(() => {
-    const {
-      headers: { authorization },
-    } = req;
-
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-
-    return logic.retrieveFavDucks(token).then(ducks => res.json(ducks));
-  }, res);
+router.get('/ducks/fav', auth, (req, res) => {
+  const { userId } = req;
+  handleErrors(() => logic.retrieveFavDucks(userId).then(ducks => res.json(ducks)), res);
 });
 
-router.get('/ducks', (req, res) => {
-  handleErrors(() => {
-    const {
-      headers: { authorization },
-      query: { query },
-    } = req;
+router.get('/ducks', auth, (req, res) => {
+  const {
+    userId,
+    query: { query },
+  } = req;
 
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-
-    return logic.searchDucks(token, query).then(ducks => res.json(ducks));
-  }, res);
+  handleErrors(() => logic.searchDucks(query).then(ducks => res.json(ducks)), res);
 });
 
-router.get('/ducks/:id', (req, res) => {
-  handleErrors(() => {
-    const {
-      headers: { authorization },
-      params: { id },
-    } = req;
-
-    if (!authorization) throw new UnauthorizedError();
-
-    const token = authorization.slice(7);
-
-    if (!token) throw new UnauthorizedError();
-
-    return (
-      logic
-        .retrieveDuck(token, id)
-        // .then(duck => res.json(duck))
-        .then(res.json.bind(res))
-    );
-  }, res);
+router.get('/ducks/:id', auth, (req, res) => {
+  const {
+    userId,
+    params: { id },
+  } = req;
+  handleErrors(() => logic.retrieveDuck(id).then(duck => res.json(duck)), res);
 });
 
 module.exports = router;

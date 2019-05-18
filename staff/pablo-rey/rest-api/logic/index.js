@@ -1,3 +1,4 @@
+//@ts-check
 const jwt = require('jsonwebtoken');
 const validate = require('../common/validate');
 const userData = require('../data/user-data');
@@ -8,7 +9,7 @@ const _token = require('../common/token');
 const logic = {
   __signToken__(user) {
       if (!user) throw new UnauthorizedError('invalid credentials');
-      return jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+      return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
   },
   verifyToken(token) {
     if (!token) return false;
@@ -16,7 +17,7 @@ const logic = {
   },
 
   parseId(token) {
-    return _token.payload(token).id;
+    return _token.payload(token).sub;
   },
 
   registerUser(name, surname, email, password) {
@@ -135,8 +136,9 @@ const logic = {
   retrieveFavDucks(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    return userData.retrieve(id).then(user => {
-      const { favs } = user;
+    return userData.retrieve(id)
+    .then(user => {
+      const { favs = [] } = user;
       if (favs.length) {
         const calls = favs.map(fav => duckApi.retrieveDuck(fav));
 
