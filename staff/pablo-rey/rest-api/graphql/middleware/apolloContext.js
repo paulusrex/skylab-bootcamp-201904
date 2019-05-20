@@ -1,11 +1,23 @@
+const { AuthenticationError } = require('apollo-server');
+const logic = require('../../logic')
+
+
 function apolloContext({ req }) {
-  let tokenString = req.headers.authorization;
-  if (typeof tokenString === "string") {
-    tokenString = tokenString.split(" ")[1];
+  const {
+    headers: { authorization },
+  } = req;
+  // if (!authorization) throw new AuthenticationError();
+
+  let token = authorization;
+  if (typeof token === "string") {
+    token = token.split(" ")[1];
   } else {
-    tokenString = null;
+    token = null;
   }
-  return { token: tokenString };
+  // if (!token) throw new AuthenticationError();
+
+  const { sub } = logic.verifyToken(token);
+  return { token, userId: sub };
 }
 
 module.exports = apolloContext;

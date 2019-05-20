@@ -185,7 +185,7 @@ describe('logic', () => {
           const payloadJson = atob(payloadB64);
           const payload = JSON.parse(payloadJson);
 
-          expect(payload.id).toBe(id);
+          expect(payload.sub).toBe(id);
         }));
 
       it('should fail on non-existing user', () =>

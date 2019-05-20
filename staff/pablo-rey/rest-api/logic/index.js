@@ -8,8 +8,8 @@ const _token = require('../common/token');
 
 const logic = {
   __signToken__(user) {
-      if (!user) throw new UnauthorizedError('invalid credentials');
-      return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    if (!user) throw new UnauthorizedError('invalid credentials');
+    return jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
   },
   verifyToken(token) {
     if (!token) return false;
@@ -60,15 +60,20 @@ const logic = {
     });
   },
 
-  retrieveUser(id) {
+  retrieveCompleteUser(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
-
     return userData.retrieve(id).then(user => {
       if (!user) throw new LogicError(`user with id "${id}" does not exists`);
-      const _user = { ...user };
-      delete _user.password;
+      const _user = { favs: [], cart: [], ...user };
       return _user;
     });
+  },
+
+  retrieveUser(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
+    return logic
+      .retrieveCompleteUser(id)
+      .then(({ id, name, surname, email }) => ({ id, name, surname, email }));
   },
 
   updateUser(id, name, surname, email, password) {
@@ -101,18 +106,37 @@ const logic = {
     return userData.delete(id);
   },
 
+  retrieveCart(id) {
+    return logic.retrieveCompleteUser(id).then(({ cart }) => {
+      if (cart.length) {
+        const calls = cart.map(line => logic.retrieveDuck(line.duckId));
+        return Promise.all(calls).then(ducks =>
+          cart.map((line, i) => {
+            const resultLine = { ...line, duck: ducks[i] };
+            delete resultLine.duckId;
+            return resultLine;
+          })
+        );
+      } else return cart;
+    });
+  },
+
+  saveCart(id, cart) {
+    return userData.update(id, { cart }).then(({ cart }) => {
+      cart;
+    });
+  },
+
   searchDucks(query) {
     validate.arguments([{ name: 'query', value: query, type: 'string' }]);
 
     return duckApi.searchDucks(query).then(ducks => (ducks instanceof Array ? ducks : []));
-
   },
 
   retrieveDuck(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
     return duckApi.retrieveDuck(id);
-
   },
 
   toggleFavDuck(userId, duck) {
@@ -128,22 +152,18 @@ const logic = {
       const index = favs.indexOf(duckId);
       if (index === -1) favs.push(duckId);
       else favs.splice(index, 1);
-      return userData.update(user.id, {...user, favs}).then(user => undefined)
+      return userData.update(user.id, { ...user, favs }).then(user => undefined);
     });
-
   },
 
   retrieveFavDucks(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    return userData.retrieve(id)
-    .then(user => {
-      const { favs = [] } = user;
+    return logic.retrieveCompleteUser(id).then(({ favs }) => {
       if (favs.length) {
         const calls = favs.map(fav => duckApi.retrieveDuck(fav));
-
         return Promise.all(calls);
-      } else return [];
+      } else return favs;
     });
   },
 };

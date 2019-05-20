@@ -3,7 +3,7 @@ const { gql } = require('apollo-server-express');
 const logic = require('../../logic');
 const { LogicError } = require('../../common/errors');
 const { UserInputError, AuthenticationError } = require('apollo-server');
-const userData = require('../../data/user-data')
+const userData = require('../../data/user-data');
 
 const typeDefs = gql`
   type User {
@@ -11,6 +11,7 @@ const typeDefs = gql`
     email: String!
     name: String!
     surname: String!
+    favs: [String!]!
   }
   type Query {
     users: [User!]!
@@ -29,9 +30,9 @@ const resolvers = {
       if (!logic.verifyToken(token)) throw new AuthenticationError('wrong/missing credentials');
       return await userData.list();
     },
-    async user(parent, args, { token }, info) {
-      const result = await logic.retrieveUser(logic.parseId(token));
-      return { ...result, id: logic.parseId(token) };
+    async user(parent, args, { userId }, info) {
+      const result = await logic.retrieveCompleteUser(userId);
+      return { ...result, id: userId, cart: retrieveCart(userId) };
     },
   },
   Mutation: {

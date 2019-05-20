@@ -40,7 +40,7 @@ const resolvers = {
     async toggleDuck(parent, args, context, info) {
       
     }
-  }
+  },
 };
 
 module.exports = makeExecutableSchema({

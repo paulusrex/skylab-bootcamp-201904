@@ -29,36 +29,44 @@ router.put('/users', auth, jsonParser, (req, res) => {
     userId,
   } = req;
 
-  handleErrors(() => 
-    logic.updateUser(userId, name, surname, email, password)
-      .then(() => res.status(201).json({ message: 'Ok, user updated. ' }))
-  , res);
+  handleErrors(
+    () =>
+      logic
+        .updateUser(userId, name, surname, email, password)
+        .then(() => res.status(201).json({ message: 'Ok, user updated. ' })),
+    res
+  );
 });
 
 router.delete('/users', auth, (req, res) => {
-  const {
-    headers: { authorization },
-    userId
-  } = req;
+  const { userId } = req;
 
-  handleErrors(() => logic.deleteUser(userId)
-      .then(() => res.status(201).json({ message: 'Ok, user deleted. ' }))
-  , res);
+  handleErrors(
+    () =>
+      logic.deleteUser(userId).then(() => res.status(201).json({ message: 'Ok, user deleted. ' })),
+    res
+  );
 });
 
 router.get('/users', auth, (req, res) => {
+  const { userId } = req;
+
+  handleErrors(() => logic.retrieveUser(userId).then(user => res.json(user)), res);
+});
+
+router.get('/users/cart', auth, (req, res) => {
+  const { userId } = req;
+
+  handleErrors(() => logic.retrieveCart(userId).then(user => res.json(user)), res);
+});
+
+router.patch('/users/cart', auth, jsonParser, (req, res) => {
   const {
-    headers: { authorization },
+    body: { cart },
     userId,
   } = req;
 
-  handleErrors(() => logic.retrieveUser(userId)
-      .then(user => {
-        delete user.password;
-        return user;
-      })
-      .then(user => res.json(user))
-  , res);
+  handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json(cart)), res);
 });
 
 router.post('/users/auth', jsonParser, (req, res) => {
