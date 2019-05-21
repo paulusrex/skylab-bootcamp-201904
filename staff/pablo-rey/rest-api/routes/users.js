@@ -60,13 +60,20 @@ router.get('/users/cart', auth, (req, res) => {
   handleErrors(() => logic.retrieveCart(userId).then(user => res.json(user)), res);
 });
 
-router.patch('/users/cart', auth, jsonParser, (req, res) => {
+router.put('/users/cart', auth, jsonParser, (req, res) => {
   const {
     body: { cart },
     userId,
   } = req;
-
-  handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json(cart)), res);
+  router.put('/users/cart', auth, jsonParser, (req, res) => {
+    const {
+      body: { cart },
+      userId,
+    } = req;
+  
+    handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
+  });
+  handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
 });
 
 router.post('/users/auth', jsonParser, (req, res) => {

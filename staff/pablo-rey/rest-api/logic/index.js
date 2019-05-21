@@ -109,7 +109,7 @@ const logic = {
   retrieveCart(id) {
     return logic.retrieveCompleteUser(id).then(({ cart }) => {
       if (cart.length) {
-        const calls = cart.map(line => logic.retrieveDuck(line.duckId));
+        const calls = cart.map(line => line.duck || logic.retrieveDuck(line.duckId));
         return Promise.all(calls).then(ducks =>
           cart.map((line, i) => {
             const resultLine = { ...line, duck: ducks[i] };
@@ -122,9 +122,10 @@ const logic = {
   },
 
   saveCart(id, cart) {
-    return userData.update(id, { cart }).then(({ cart }) => {
-      cart;
-    });
+    const newCart = cart.map(({ duck, quantity }) => ({ duckId: duck.id, quantity }));
+    return userData.update(id, { cart: newCart }).then(({ cart }) => 
+      cart
+    );
   },
 
   searchDucks(query) {
