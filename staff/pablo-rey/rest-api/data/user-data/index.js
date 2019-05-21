@@ -1,94 +1,58 @@
-require('dotenv').config()
+require('dotenv').config();
 
-const fs = require('fs').promises;
-const path = require('path');
-const uuid = require('uuid/v4');
 const validate = require('../../common/validate');
 const { ValueError } = require('../../common/errors');
+const { ObjectId } = require('mongodb');
 
 const userData = {
-  __file__: path.join(__dirname, 'users.json'),
-
-  __load__() {
-    return this.__users__ ? Promise.resolve(this.__users__) : fs.readFile(this.__file__, 'utf8')
-      .then(res => JSON.parse(res)) 
-      .then(users => this.__users__ = users);
-  },
-
-  __save__() {
-    return fs.writeFile(this.__file__, JSON.stringify(this.__users__ = this.__users__ || []))
-  },
+  __col_: null,
 
   create(user) {
     validate.arguments([{ name: 'user', value: user, type: 'object', optional: false }]);
 
-    user.id = uuid();
-    return this.__load__()
-      .then(users => {
-        users.push(user);
-        return this.__save__(users);
-      })
-      .then(() => user);
+    return (async () => {
+      await this.__col__.insertOne(user);
+    })();
   },
 
   list() {
-    return this.__load__();
+    return this.__col__.find().toArray();
   },
 
   retrieve(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    return this.__load__().then(users => {
-      const user = users.find(user => user.id === id);
-      return user;
-    });
+    return this.__col__.findOne(ObjectId(id));
   },
 
-  update(id, user, replace) {
+  update(id, user) {
     validate.arguments([
       { name: 'id', value: id, type: 'string', notEmpty: true },
       { name: 'user', value: user, type: 'object', notEmpty: true },
-      { name: 'replace', value: replace, type: 'boolean', optional: true },
     ]);
 
-    if (user.id && id !== user.id) new ValueError('data id does not match criteria id')
-
-    return this.__load__().then(users => {
-      const index = users.findIndex(user => user.id === id);
-      if (index !== -1) {
-        const updatedUser = (replace) ?  ({ ...user, id }) : ({ ...users[index], ...user, id });
-        users[index] = updatedUser;
-        return this.__save__(users)
-          .then(() => users[index]);
-      } 
-    });
+    if (user.id && id !== user.id) new ValueError('data id does not match criteria id');
+    return (async () => {
+      const result = await this.__col__.updateOne({ _id: ObjectId(id) }, { $set: user })
+      return result.modifiedCount;
+    })();
   },
 
   delete(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
 
-    return this.__load__().then(users => {
-      const index = users.findIndex(user => user.id === id);
-      if (index === -1) return false;
-      const userRemoved = users.splice(index, 1);
-      return this.__save__(users).then(() => userRemoved[0]);
-    });
+    return (async() => {
+      const result = await this.__col__.deleteOne({_id : ObjectId(id)})
+      return result.deletedCount;
+    })();
   },
 
   find(criteria) {
-    if (!criteria instanceof Object) {
-      throw new Error('criteria must be a function or an object');
-    }
+    validate.arguments([
+      { name: 'criteria', value: criteria, type: 'object', notEmpty: true },
+    ]);
 
-    const criteriafn =
-      criteria instanceof Function
-        ? criteria
-        : user => Object.keys(criteria).every(key => user[key] === criteria[key]);
-
-    return this.__load__().then(users => {
-      const result = users.filter(criteriafn);
-      return result;
-    });
+    return (async() => await this.__col__.find(criteria).toArray());
   },
 };
 

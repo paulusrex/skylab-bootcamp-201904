@@ -1,143 +1,131 @@
+//@ts-check
 const userData = require('.');
-const fs = require('fs').promises;
-const path = require('path');
 const uuid = require('uuid/v4');
 
-userData.__file__ = path.join(__dirname, 'users_tst.json');
+const { MongoClient, ObjectId } = require('mongodb');
 
 describe('user data', () => {
-  const users = [
-    {
-      id: uuid(),
-      name: 'Jane',
-      surname: 'Doe',
-      email: uuid() + '@mail.com',
-      password: '123',
-    },
-    {
-      id: uuid(),
-      name: 'John',
-      surname: 'Doe',
-      email: uuid() + '@mail.com',
-      password: '123',
-    },
-    {
-      id: uuid(),
-      name: 'Jane',
-      surname: 'Smith',
-      email: uuid() + '@mail.com',
-      password: '123',
-    },
-  ];
+  function newUsers() {
+    return [
+      {
+        name: 'Jane',
+        surname: 'Doe',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+      {
+        name: 'John',
+        surname: 'Doe',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+      {
+        name: 'Jane',
+        surname: 'Smith',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+    ];
+  }
+  let users;
+  const url = 'mongodb://localhost/rest-api-test';
+  let client, db, col;
 
-  beforeEach(() => userData.__users__ = undefined)
-  afterAll(() => fs.writeFile(userData.__file__, '[]'));
+  beforeAll(async () => {
+    client = await MongoClient.connect(url, { useNewUrlParser: true });
+    db = client.db();
+    col = userData.__col__ = db.collection('users');
+  });
+  afterAll(() => client.close());
+  beforeEach(async () => {
+    users = newUsers();
+    return await col.deleteMany();
+  });
 
   describe('create', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, '[]'));
-
-    it('should succeed on correct data', () => {
+    it('should succeed on correct data', async () => {
       const user = {
         name: 'Test',
         surname: 'testing',
-        email: uuid() + '@mail.com',
+        email: `${uuid()}@mail.com`,
         password: '123',
       };
 
-      return userData
-        .create(user)
-        .then(_user => {
-          expect(_user).toEqual(user);
-          expect(typeof user.id).toBe('string');
-          return fs.readFile(userData.__file__, 'utf8');
-        })
-        .then(JSON.parse)
-        .then(users => {
-          expect(users).toHaveLength(1);
-          const [_user] = users;
-          expect(_user).toEqual(user);
-        });
+      const _user = await userData.create(user);
+      expect(user._id).toBeInstanceOf(ObjectId);
+
+      const cursor = await col.find();
+      const users = await cursor.toArray();
+      expect(users).toHaveLength(1);
+      expect(users[0]).toEqual(user);
     });
   });
 
   describe('list', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, JSON.stringify(users)));
+    const users = newUsers();
+    beforeEach(() => col.insertMany(users));
 
-    it('should succeed and return items if users exist', () => {
-      userData.list().then(_users => {
-        expect(_users).toHaveLength(users.length);
-        expect(_users).toEqual(users);
-      });
+    it('should succeed and return items if users exist', async () => {
+      const _users = await userData.list();
+      expect(_users).toHaveLength(users.length);
+      expect(_users).toEqual(users);
     });
   });
 
   describe('retrieve', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, JSON.stringify(users)));
+    beforeEach(() => col.insertMany(users));
 
-    it('should succeed on an already existing user', () =>
-      userData.retrieve(users[0].id).then(user => {
-        expect(user).toBeDefined();
-        expect(user).toEqual(users[0]);
-      }));
+    it('should succeed on an already existing user', async () => {
+      const user = await userData.retrieve(users[0]._id.toString());
+      expect(user).toBeDefined();
+      expect(user).toEqual(users[0]);
+    });
   });
 
   describe('update', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, JSON.stringify(users)));
+    beforeEach(() => col.insertMany(users));
 
-    it('should update an existing user', () => {
-      const updatingText = uuid();
-      const updatingFields = { name: updatingText };
-      return userData
-        .update(users[0].id, updatingFields)
-        .then(_user => {
-          expect(_user).toBeDefined();
-          expect(_user).toMatchObject(updatingFields);
-          expect(_user).toEqual({ ...users[0], ...updatingFields });
-        })
-        .then(() => fs.readFile(userData.__file__, 'utf8').then(JSON.parse))
-        .then(_users => {
-          expect(_users).toHaveLength(users.length);
-          expect(_users).toContainEqual({ ...users[0], ...updatingFields });
-        });
+    it('should update an existing user', async () => {
+      const { _id } = users[0];
+
+      const updatingFields = { name: uuid() };
+      const expected = { ...users[0], ...updatingFields };
+      const result = await userData.update(_id.toString(), updatingFields);
+      expect(result).toBe(1);
+
+      const user = await col.findOne({ _id });
+      expect(user).toEqual(expected);
     });
   });
 
   describe('delete', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, JSON.stringify(users)));
+    beforeEach(() => col.insertMany(users));
 
-    it('should succeed on matching existing users', () =>
-      userData.delete(users[0].id).then(user => {
-        expect(user).toBeDefined();
-        expect(users[0]).toEqual(user);
-        return fs
-          .readFile(userData.__file__, 'utf8')
-          .then(JSON.parse)
-          .then(_users => {
-            expect(_users).toHaveLength(users.length - 1);
-            expect(_users).not.toContainEqual(user);
-          });
-      }));
+    it('should succeed on matching existing users', async () => {
+      const { _id } = users[0];
+      const result = await userData.delete(_id.toString());
+      expect(result).toBe(1);
+
+      const user = await col.findOne({ _id });
+      expect(user).toBeNull();
+
+      const cursor = await col.find();
+      const _users = await cursor.toArray();
+      expect(_users).toHaveLength(users.length - 1);
+      expect(_users.some(_user => _user._id.toString() === _id.toString())).toBeFalsy();
+    });
   });
 
   describe('find', () => {
-    beforeEach(() => fs.writeFile(userData.__file__, JSON.stringify(users)));
+    beforeEach(() => col.insertMany(users));
 
-    it('should succeed on matching existing users', () =>
-      userData.find({ name: 'Jane' }).then(_users => {
-        expect(_users).toBeDefined();
-        expect(_users).toBeInstanceOf(Array);
-        expect(_users).toHaveLength(2);
-        expect(_users).toEqual(users.filter(user => user.name === 'Jane'));
-      }));
-
-    it('should succeed on matching existing users, with criteria as function', () => {
-      const criteria = user => user.name === 'Jane';
-      return userData.find(criteria).then(_users => {
-        expect(_users).toBeDefined();
-        expect(_users).toBeInstanceOf(Array);
-        expect(_users).toHaveLength(2);
-        expect(_users).toEqual(users.filter(user => user.name === 'Jane'));
-      });
+    it('should succeed on matching existing users', async () => {
+      const _users = await col.find({ name: 'Jane' }).toArray();
+      expect(_users).toBeDefined();
+      expect(_users).toBeInstanceOf(Array);
+      expect(_users).toHaveLength(2);
+      expect(_users).toEqual(users.filter(user => user.name === 'Jane'));
     });
+
   });
 });

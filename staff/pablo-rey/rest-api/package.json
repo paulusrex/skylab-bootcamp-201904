@@ -27,8 +27,8 @@
     "watch": "nodemon .",
     "debug": "node debug .",
     "test": "jest",
-    "test:debug": "node debug node_modules/.bin/jest --runInBand --watchAll",
-    "test:inspect": "node --inspect-brk node_modules/.bin/jest --runInBand --watchAll "
+    "test:debug": "node debug ./node_modules/jest/bin/jest.js --runInBand --watchAll",
+    "test:inspect": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watchAll"
   },
   "nodemonConfig": {
     "ignore": [
