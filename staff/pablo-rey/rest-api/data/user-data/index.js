@@ -5,6 +5,7 @@ const { ValueError } = require('../../common/errors');
 const { ObjectId } = require('mongodb');
 
 const userData = {
+  __url__: 'mongodb://localhost/rest-duck-app',
   __col_: null,
 
   create(user) {
@@ -52,7 +53,10 @@ const userData = {
       { name: 'criteria', value: criteria, type: 'object', notEmpty: true },
     ]);
 
-    return (async() => await this.__col__.find(criteria).toArray());
+    return (async () => {
+      const users = await this.__col__.find(criteria).toArray();
+      return users.map(user => ({ id: user._id.toString(), ...user }));
+    })();
   },
 };
 

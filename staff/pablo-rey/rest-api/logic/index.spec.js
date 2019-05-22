@@ -2,62 +2,80 @@
 require('dotenv').config();
 
 const logic = require('.');
-const fs = require('fs').promises;
 const { LogicError, RequirementError, ValueError, FormatError } = require('../common/errors');
-// const userApi = require('../data/user-api');
 const duckApi = require('../data/duck-api');
 const userData = require('../data/user-data');
-const path = require('path');
 const atob = require('atob');
+const uuid = require('uuid/v4');
+
+const { MongoClient, ObjectId } = require('mongodb');
 
 describe('logic', () => {
-  const name = 'Manuel';
-  const surname = 'Barzi';
-  let email;
-  const password = '123';
+  function newUsers() {
+    return [
+      {
+        name: 'Jane',
+        surname: 'Doe',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+      {
+        name: 'John',
+        surname: 'Doe',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+      {
+        name: 'Jane',
+        surname: 'Smith',
+        email: uuid() + '@mail.com',
+        password: '123',
+      },
+    ];
+  }
+  let users;
+  const url = 'mongodb://localhost/rest-api-test';
+  let client, db, col;
 
-  beforeAll(() => (userData.__file__ = path.join(__dirname, 'users_tst.json')));
-  beforeEach(() => {
-    userData.__users__ = undefined;
-    email = `test-${Math.random()}@gmail.com`;
+  beforeAll(async () => {
+    client = await MongoClient.connect(url, { useNewUrlParser: true });
+    db = client.db();
+    col = userData.__col__ = db.collection('users');
   });
-  afterAll(() => fs.writeFile(userData.__file__, '[]'));
-
+  afterAll(() => client.close());
+  beforeEach(async () => {
+    users = newUsers();
+    return col.deleteMany();
+  });
   describe('users', () => {
-    describe('register user', () => {
-      beforeEach(() => fs.writeFile(userData.__file__, '[]'));
+    let name, surname, email, password;
 
-      it('should succeed on correct user data', () => {
+    beforeEach(() => {
+      name = users[0].name;
+      surname = users[0].surname;
+      email = users[0].email;
+      password = users[0].password;
+    });
+    describe('register user', () => {
+      it('should succeed on correct user data', async () => {
         const baseUser = { name, surname, email };
-        return logic.registerUser(name, surname, email, password).then(user => {
-          expect(user).toBeDefined();
-          expect(user).toMatchObject(baseUser);
-          return userData.find(baseUser).then(users => {
-            expect(users).toHaveLength(1);
-            expect(users[0]).toMatchObject(baseUser);
-          });
-        });
+        await logic.registerUser(name, surname, email, password);
+        const _users = await userData.find(baseUser);
+        expect(_users).toHaveLength(1);
+        expect(_users[0]).toMatchObject(baseUser);
       });
 
-      describe('on already existing user', () => {
-        beforeEach(() =>
-          fs
-            .writeFile(userData.__file__, '[]')
-            .then(() => logic.registerUser(name, surname, email, password))
-        );
+      it('should fail on retrying to register', async () => {
+        await col.insertOne(users[0]);
+        try {
+          await logic.registerUser(name, surname, email, password);
+          throw Error('should not reach this point');
+        } catch (error) {
+          expect(error).toBeDefined();
+          expect(error instanceof LogicError).toBeTruthy();
 
-        it('should fail on retrying to register', () =>
-          logic
-            .registerUser(name, surname, email, password)
-            .then(() => {
-              throw Error('should not reach this point');
-            })
-            .catch(error => {
-              expect(error).toBeDefined();
-              expect(error instanceof LogicError).toBeTruthy();
-
-              expect(error.message).toBe(`user with email \"${email}\" already registered`);
-            }));
+          expect(error.message).toBe(`user with email \"${email}\" already registered`);
+        }
       });
 
       it('should fail on undefined name', () => {
@@ -163,18 +181,11 @@ describe('logic', () => {
           new FormatError(`${nonEmail} is not an e-mail`)
         );
       });
-
-      // TODO password fail cases
     });
 
     describe('authenticate user', () => {
       let id;
-      beforeEach(() =>
-        fs
-          .writeFile(userData.__file__, '[]')
-          .then(() => userData.create({ name, surname, email, password }))
-          .then(user => (id = user.id))
-      );
+      beforeEach(() => col.insertMany(users));
 
       it('should succeed on correct user credential', () =>
         logic.authenticateUser(email, password).then(token => {
@@ -214,112 +225,94 @@ describe('logic', () => {
     });
 
     describe('retrieve user', () => {
-      let id;
-      beforeEach(() =>
-        fs
-          .writeFile(userData.__file__, '[]')
-          .then(() => userData.create({ name, surname, email, password }))
-          .then(user => (id = user.id))
-      );
+      beforeEach(() => col.insertMany(users));
 
-      it('should succeed on correct user id and token', () =>
-        logic.retrieveUser(id).then(user => {
-          expect(user.id).toBeDefined();
-          expect(user.name).toBe(name);
-          expect(user.surname).toBe(surname);
-          expect(user.email).toBe(email);
-          expect(user.password).toBeUndefined();
-        }));
+      it('should succeed on correct user id and token', async () => {
+        const id = users[0]._id.toString();
+        const _user = await logic.retrieveUser(id);
+        expect(_user.id).toBeDefined();
+        expect(_user.name).toBe(name);
+        expect(_user.surname).toBe(surname);
+        expect(_user.email).toBe(email);
+        expect(_user.password).toBeUndefined();
+      });
 
-      it('should fail on non-existing user', () =>
-        logic
-          .retrieveUser('somewrongrandomid')
-          .then(() => {
-            throw Error('should not reach this point');
-          })
-          .catch(error => {
-            expect(error).toBeDefined();
-            expect(error).toBeInstanceOf(LogicError);
-            expect(error.message).toBe(`user with id "${'somewrongrandomid'}" does not exists`);
-          }));
+      it('should fail on non-existing user', async () => {
+        const id = users[0]._id
+          .toString()
+          .split('')
+          .reverse()
+          .join('');
+        try {
+          const _user = await logic.retrieveUser(id);
+          throw Error('should not reach this point');
+        } catch (error) {
+          expect(error).toBeDefined();
+          expect(error).toBeInstanceOf(LogicError);
+          expect(error.message).toBe(`user with id "${id}" does not exists`);
+        }
+      });
     });
 
     describe('update user', () => {
       let id;
-      beforeEach(() =>
-        fs
-          .writeFile(userData.__file__, '[]')
-          .then(() => userData.create({ name, surname, email, password }))
-          .then(user => (id = user.id))
-      );
+      beforeEach(async () => {
+        await col.insertMany(users);
+        id = users[0]._id.toString();
+      });
 
-      it('should succeed on update name ', () => {
+      it('should succeed on update name ', async () => {
         const randomName = 'new test name';
-        return logic
-          .updateUser(id, randomName)
-          .then(() => userData.retrieve(id))
-          .then(user => {
-            expect(user.name).toBe(randomName);
-            expect(user.surname).toBe(surname);
-            expect(user.email).toBe(email);
-            expect(user.password).toBe(password);
-          });
+        await logic.updateUser(id, randomName);
+        const _user = await userData.retrieve(id);
+        expect(_user.name).toBe(randomName);
+        expect(_user.surname).toBe(surname);
+        expect(_user.email).toBe(email);
+        expect(_user.password).toBe(password);
       });
 
-      it('should succeed on update surname ', () => {
+      it('should succeed on update surname ', async () => {
         const randomSurname = 'new test surname';
-        return logic
-          .updateUser(id, undefined, randomSurname)
-          .then(() => userData.retrieve(id))
-          .then(user => {
-            expect(user.name).toBe(name);
-            expect(user.surname).toBe(randomSurname);
-            expect(user.email).toBe(email);
-            expect(user.password).toBe(password);
-          });
+        await logic.updateUser(id, undefined,  randomSurname);
+        const _user = await userData.retrieve(id);
+        expect(_user.name).toBe(name);
+        expect(_user.surname).toBe(randomSurname);
+        expect(_user.email).toBe(email);
+        expect(_user.password).toBe(password);
       });
 
-      it('should succeed on update email ', () => {
+      it('should succeed on update email ', async () => {
         const randomEmail = 'new-test-email-' + email;
-        return logic
-          .updateUser(id, undefined, undefined, randomEmail)
-          .then(() => userData.retrieve(id))
-          .then(user => {
-            expect(user.name).toBe(name);
-            expect(user.surname).toBe(surname);
-            expect(user.email).toBe(randomEmail);
-            expect(user.password).toBe(password);
-          });
+        await logic.updateUser(id, undefined, undefined, randomEmail);
+        const _user = await userData.retrieve(id);
+        expect(_user.name).toBe(name);
+        expect(_user.surname).toBe(surname);
+        expect(_user.email).toBe(randomEmail);
+        expect(_user.password).toBe(password);
       });
 
-      it('should succeed on update password ', () => {
+      it('should succeed on update password ', async () => {
         const randomPassword = 'new-test-password';
-        return logic
-          .updateUser(id, undefined, undefined, undefined, randomPassword)
-          .then(() => userData.retrieve(id))
-          .then(user => {
-            expect(user.name).toBe(name);
-            expect(user.surname).toBe(surname);
-            expect(user.email).toBe(email);
-            expect(user.password).toBe(randomPassword);
-          });
+        await logic.updateUser(id, undefined, undefined, undefined, randomPassword);
+        const _user = await userData.retrieve(id);
+        expect(_user.name).toBe(name);
+        expect(_user.surname).toBe(surname);
+        expect(_user.email).toBe(email);
+        expect(_user.password).toBe(randomPassword);
       });
     });
 
-    describe('delete user', () => {
+    fdescribe('delete user', () => {
       let id;
-      beforeEach(() =>
-        fs
-          .writeFile(userData.__file__, '[]')
-          .then(() => userData.create({ name, surname, email, password }))
-          .then(user => (id = user.id))
-      );
+      beforeEach(async () => {
+        await col.insertMany(users);
+        id = users[0]._id.toString();
+      });
 
-      it('should succeed on delete an user ', () => {
-        return logic
-          .deleteUser(id)
-          .then(() => userData.list())
-          .then(users => expect(users).toHaveLength(0));
+      it('should succeed on delete an user ', async () => {
+        await logic.deleteUser(id)
+        const _user = await userData.retrieve(id);
+        expect(_user).toBeNull();
       });
     });
 

@@ -38,11 +38,7 @@ const logic = {
     };
     return userData.find({ email }).then(users => {
       if (users.length) throw new LogicError(`user with email "${email}" already registered`);
-      return userData.create(user).then(user => {
-        const _user = { ...user };
-        delete _user.password;
-        return _user;
-      });
+      return userData.create(user)
     });
   },
 
@@ -62,11 +58,13 @@ const logic = {
 
   retrieveCompleteUser(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
-    return userData.retrieve(id).then(user => {
+    return (async () => {
+      const user = await userData.retrieve(id);
       if (!user) throw new LogicError(`user with id "${id}" does not exists`);
-      const _user = { favs: [], cart: [], ...user };
+      const _user = { favs: [], cart: [], ...user, id: user._id.toString() };
+      delete _user._id
       return _user;
-    });
+    })();
   },
 
   retrieveUser(id) {
@@ -153,7 +151,7 @@ const logic = {
       const index = favs.indexOf(duckId);
       if (index === -1) favs.push(duckId);
       else favs.splice(index, 1);
-      return userData.update(user.id, { ...user, favs }).then(user => undefined);
+      return userData.update(user._id.toString(), { ...user, favs }).then(user => undefined);
     });
   },
 
