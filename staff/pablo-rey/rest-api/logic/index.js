@@ -38,7 +38,7 @@ const logic = {
     };
     return userData.find({ email }).then(users => {
       if (users.length) throw new LogicError(`user with email "${email}" already registered`);
-      return userData.create(user)
+      return userData.create(user);
     });
   },
 
@@ -62,7 +62,7 @@ const logic = {
       const user = await userData.retrieve(id);
       if (!user) throw new LogicError(`user with id "${id}" does not exists`);
       const _user = { favs: [], cart: [], ...user, id: user._id.toString() };
-      delete _user._id
+      delete _user._id;
       return _user;
     })();
   },
@@ -121,9 +121,38 @@ const logic = {
 
   saveCart(id, cart) {
     const newCart = cart.map(({ duck, quantity }) => ({ duckId: duck.id, quantity }));
-    return userData.update(id, { cart: newCart }).then(({ cart }) => 
-      cart
-    );
+    return userData.update(id, { cart: newCart }).then(({ cart }) => cart);
+  },
+
+  async addToCart(userId, duckId) {
+    const { cart = [] } = await logic.retrieveCompleteUser(userId);
+    const index = cart.findIndex(line => line.duckId === duckId);
+    if (index !== -1) {
+      cart[index].quantity++;
+    } else {
+      cart.push({ duckId, quantity: 1 });
+    }
+    await userData.update(userId, { cart });
+    return logic.retrieveCart(userId);
+  },
+
+  async subtractFromCart(userId, duckId) {
+    const { cart = [] } = await logic.retrieveCompleteUser(userId);
+    const index = cart.findIndex(line => line.duckId === duckId);
+    if (index !== -1) {
+      cart[index].quantity--;
+      if (cart[index].quantity < 1) cart.splice(index, 1);
+    }
+    await userData.update(userId, { cart });
+    return logic.retrieveCart(userId);
+  },
+
+  async removeFromCart(userId, duckId) {
+    const { cart = [] } = await logic.retrieveCompleteUser(userId);
+    const index = cart.findIndex(line => line.duckId === duckId);
+    if (index !== -1) cart.splice(index, 1)
+    await userData.update(userId, { cart });
+    return logic.retrieveCart(userId);
   },
 
   searchDucks(query) {

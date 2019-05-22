@@ -54,6 +54,33 @@ router.get('/users', auth, (req, res) => {
   handleErrors(() => logic.retrieveUser(userId).then(user => res.json(user)), res);
 });
 
+router.post('/users/cart/add/', auth, jsonParser, (req, res) => {
+  const {
+    userId,
+    body: { duckId },
+  } = req;
+
+  handleErrors(() => logic.addToCart(userId, duckId).then(cart => res.json(cart)), res);
+});
+
+router.post('/users/cart/remove/', auth, jsonParser, (req, res) => {
+  const {
+    userId,
+    body: { duckId },
+  } = req;
+
+  handleErrors(() => logic.removeFromCart(userId, duckId).then(cart => res.json(cart)), res);
+});
+
+router.post('/users/cart/subtract/', auth, jsonParser, (req, res) => {
+  const {
+    userId,
+    body: { duckId },
+  } = req;
+
+  handleErrors(() => logic.subtractFromCart(userId, duckId).then(cart => res.json(cart)), res);
+});
+
 router.get('/users/cart', auth, (req, res) => {
   const { userId } = req;
 
@@ -70,7 +97,7 @@ router.put('/users/cart', auth, jsonParser, (req, res) => {
       body: { cart },
       userId,
     } = req;
-  
+
     handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
   });
   handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
