@@ -1,5 +1,8 @@
-//@ts-check
 require('dotenv').config();
+const chai = require('chai'),
+  expect = chai.expect,
+  should = chai.should();
+
 const mongoose = require('mongoose');
 const uuid = require('uuid/v4');
 
@@ -39,12 +42,12 @@ describe('logic', () => {
   }
   let users;
 
-  beforeAll(done => {
+  before(done => {
     db.once('open', async () => {
       done();
     });
   });
-  afterAll(() => db.close());
+  after(() => db.close());
   beforeEach(async () => {
     users = newUsers();
     await User.deleteMany();
@@ -65,8 +68,8 @@ describe('logic', () => {
         const baseUser = { name, surname, email };
         await logic.registerUser(name, surname, email, password);
         const _users = await User.find(baseUser);
-        expect(_users).toHaveLength(1);
-        expect(_users[0]).toMatchObject(baseUser);
+        expect(_users).to.have.lengthOf(1);
+        expect(_users[0]).to.deep.include(baseUser);
       });
 
       it('should fail on retrying to register', async () => {
@@ -75,114 +78,125 @@ describe('logic', () => {
           await logic.registerUser(name, surname, email, password);
           throw Error('should not reach this point');
         } catch (error) {
-          expect(error).toBeDefined();
-          expect(error instanceof LogicError).toBeTruthy();
-
-          expect(error.message).toBe(`user with email \"${email}\" already registered`);
+          expect(error).to.be.an.instanceOf(LogicError);
+          expect(error.message).to.equal(`user with email \"${email}\" already registered`);
         }
       });
 
       it('should fail on undefined name', () => {
         const name = undefined;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`name is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `name is not optional`
         );
       });
 
       it('should fail on null name', () => {
         const name = null;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`name is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `name is not optional`
         );
       });
 
       it('should fail on empty name', () => {
         const name = '';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('name is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'name is empty'
         );
       });
 
       it('should fail on blank name', () => {
         const name = ' \t    \n';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('name is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'name is empty'
         );
       });
 
       it('should fail on undefined surname', () => {
         const surname = undefined;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`surname is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `surname is not optional`
         );
       });
 
       it('should fail on null surname', () => {
         const surname = null;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`surname is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `surname is not optional`
         );
       });
 
       it('should fail on empty surname', () => {
         const surname = '';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('surname is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'surname is empty'
         );
       });
 
       it('should fail on blank surname', () => {
         const surname = ' \t    \n';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('surname is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'surname is empty'
         );
       });
 
       it('should fail on undefined email', () => {
         const email = undefined;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`email is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `email is not optional`
         );
       });
 
       it('should fail on null email', () => {
         const email = null;
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new RequirementError(`email is not optional`)
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          RequirementError,
+          `email is not optional`
         );
       });
 
       it('should fail on empty email', () => {
         const email = '';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('email is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'email is empty'
         );
       });
 
       it('should fail on blank email', () => {
         const email = ' \t    \n';
 
-        expect(() => logic.registerUser(name, surname, email, password)).toThrowError(
-          new ValueError('email is empty')
+        expect(() => logic.registerUser(name, surname, email, password)).to.throw(
+          ValueError,
+          'email is empty'
         );
       });
 
       it('should fail on non-email email', () => {
         const nonEmail = 'non-email';
 
-        expect(() => logic.registerUser(name, surname, nonEmail, password)).toThrowError(
-          new FormatError(`${nonEmail} is not an e-mail`)
+        expect(() => logic.registerUser(name, surname, nonEmail, password)).to.throw(
+          FormatError,
+          `${nonEmail} is not an e-mail`
         );
       });
     });
@@ -197,14 +211,14 @@ describe('logic', () => {
 
       it('should succeed on correct user credential', () =>
         logic.authenticateUser(email, password).then(token => {
-          expect(typeof token).toBe('string');
-          expect(token.length).toBeGreaterThan(0);
+          expect(token).to.be.an('string');
+          expect(token).to.have.length.greaterThan(0);
 
           const [, payloadB64] = token.split('.');
           const payloadJson = atob(payloadB64);
           const payload = JSON.parse(payloadJson);
 
-          expect(payload.sub).toBe(id);
+          expect(payload.sub).to.equal(id);
         }));
 
       it('should fail on non-existing user', () =>
@@ -214,9 +228,9 @@ describe('logic', () => {
             throw Error('should not reach this point');
           })
           .catch(error => {
-            expect(error).toBeDefined();
-            expect(error).toBeInstanceOf(LogicError);
-            expect(error.message).toBe(`user with email "${email}" does not exist`);
+            expect(error).not.to.be.undefined;
+            expect(error).to.be.an.instanceOf(LogicError);
+            expect(error.message).to.equal(`user with email "${email}" does not exist`);
           }));
 
       it('should fail on non-existing user', () =>
@@ -226,9 +240,9 @@ describe('logic', () => {
             throw Error('should not reach this point');
           })
           .catch(error => {
-            expect(error).toBeDefined();
-            expect(error).toBeInstanceOf(LogicError);
-            expect(error.message).toBe(`wrong credentials`);
+            expect(error).not.to.be.undefined;
+            expect(error).to.be.an.instanceOf(LogicError);
+            expect(error.message).to.equal(`wrong credentials`);
           }));
     });
 
@@ -242,11 +256,11 @@ describe('logic', () => {
 
       it('should succeed on correct user id and token', async () => {
         const _user = await logic.retrieveUser(id);
-        expect(_user.id).toBeDefined();
-        expect(_user.name).toBe(name);
-        expect(_user.surname).toBe(surname);
-        expect(_user.email).toBe(email);
-        expect(_user.password).toBeUndefined();
+        expect(_user.id).not.to.be.undefined;
+        expect(_user.name).to.equal(name);
+        expect(_user.surname).to.equal(surname);
+        expect(_user.email).to.equal(email);
+        expect(_user.password).to.be.undefined;
       });
 
       it('should fail on non-existing user', async () => {
@@ -259,9 +273,9 @@ describe('logic', () => {
           const _user = await logic.retrieveUser(_id);
           throw Error('should not reach this point');
         } catch (error) {
-          expect(error).toBeDefined();
-          expect(error).toBeInstanceOf(LogicError);
-          expect(error.message).toBe(`user with id "${_id}" does not exists`);
+          expect(error).not.to.be.undefined;
+          expect(error).to.be.an.instanceOf(LogicError);
+          expect(error.message).to.equal(`user with id "${_id}" does not exists`);
         }
       });
     });
@@ -278,40 +292,40 @@ describe('logic', () => {
         const randomName = 'new test name';
         await logic.updateUser(id, randomName);
         const _user = await User.findById(id);
-        expect(_user.name).toBe(randomName);
-        expect(_user.surname).toBe(surname);
-        expect(_user.email).toBe(email);
-        expect(_user.password).toBe(password);
+        expect(_user.name).to.equal(randomName);
+        expect(_user.surname).to.equal(surname);
+        expect(_user.email).to.equal(email);
+        expect(_user.password).to.equal(password);
       });
 
       it('should succeed on update surname ', async () => {
         const randomSurname = 'new test surname';
         await logic.updateUser(id, undefined, randomSurname);
         const _user = await User.findById(id);
-        expect(_user.name).toBe(name);
-        expect(_user.surname).toBe(randomSurname);
-        expect(_user.email).toBe(email);
-        expect(_user.password).toBe(password);
+        expect(_user.name).to.equal(name);
+        expect(_user.surname).to.equal(randomSurname);
+        expect(_user.email).to.equal(email);
+        expect(_user.password).to.equal(password);
       });
 
       it('should succeed on update email ', async () => {
         const randomEmail = 'new-test-email-' + email;
         await logic.updateUser(id, undefined, undefined, randomEmail);
         const _user = await User.findById(id);
-        expect(_user.name).toBe(name);
-        expect(_user.surname).toBe(surname);
-        expect(_user.email).toBe(randomEmail);
-        expect(_user.password).toBe(password);
+        expect(_user.name).to.equal(name);
+        expect(_user.surname).to.equal(surname);
+        expect(_user.email).to.equal(randomEmail);
+        expect(_user.password).to.equal(password);
       });
 
       it('should succeed on update password ', async () => {
         const randomPassword = 'new-test-password';
         await logic.updateUser(id, undefined, undefined, undefined, randomPassword);
         const _user = await User.findById(id);
-        expect(_user.name).toBe(name);
-        expect(_user.surname).toBe(surname);
-        expect(_user.email).toBe(email);
-        expect(_user.password).toBe(randomPassword);
+        expect(_user.name).to.equal(name);
+        expect(_user.surname).to.equal(surname);
+        expect(_user.email).to.equal(email);
+        expect(_user.password).to.equal(randomPassword);
       });
     });
 
@@ -326,7 +340,7 @@ describe('logic', () => {
       it('should succeed on delete an user ', async () => {
         await logic.deleteUser(id);
         const _user = await User.findById(id);
-        expect(_user).toBeNull();
+        expect(_user).to.be.null;
       });
     });
   });
@@ -363,10 +377,10 @@ describe('logic', () => {
       const text = randomText();
       await logic.createNewNote(user, text, new Date());
       const _notes = await Note.find();
-      expect(_notes).toHaveLength(1);
+      expect(_notes).to.have.lengthOf(1);
       const _note = _notes[0];
-      expect(_note.text).toBe(text);
-      expect(_note.author._id.toString()).toBe(user._id.toString());
+      expect(_note.text).to.equal(text);
+      expect(_note.author._id.toString()).to.equal(user._id.toString());
     });
 
     describe('multiple notes', () => {
@@ -381,63 +395,64 @@ describe('logic', () => {
 
       it('should retrieve all notes', async () => {
         const _notes = await Note.find();
-        expect(_notes).toHaveLength(notes.length);
+        expect(_notes).to.have.lengthOf(notes.length);
         _notes.forEach(async _note => {
           const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
-          expect(note.text).toBe(_note.text);
-          expect(note.author.toString()).toBe(_note.author._id.toString());
-          expect(note.date).toBe(note.date);
+          expect(note.text).to.equal(_note.text);
+          expect(note.author.toString()).to.equal(_note.author._id.toString());
+          expect(note.date).to.equal(note.date);
         });
       });
 
       it('should retrieve a note', async () => {
         const expectedNote = notes[Math.floor(Math.random() * notes.length)];
         const note = await logic.retrieveNote(expectedNote._id.toString());
-        expect(note.text).toBe(expectedNote.text);
-        expect(note.author.toString()).toBe(expectedNote.author._id.toString());
-        expect(note.date.getTime()).toBe(expectedNote.date.getTime());
+        expect(note.text).to.equal(expectedNote.text);
+        expect(note.author.toString()).to.equal(expectedNote.author._id.toString());
+        expect(note.date.getTime()).to.equal(expectedNote.date.getTime());
       });
 
       it('should update the text of a note', async () => {
         const index = Math.floor(Math.random() * notes.length);
         const _idToUpdate = notes[index]._id;
         const expectedText = randomText();
-        
-        await logic.updateNote(_idToUpdate.toString(), { text : expectedText });
-        
+
+        await logic.updateNote(_idToUpdate.toString(), { text: expectedText });
+
         const _note = await Note.findById(_idToUpdate);
-        expect(_note).not.toBeNull();
-        expect(_note.text).toBe(expectedText);
-        
+        expect(_note).not.to.be.null;
+        expect(_note.text).to.equal(expectedText);
+
         const _notes = await Note.find();
-        expect(_notes).toHaveLength(notes.length);
+        expect(_notes).to.have.lengthOf(notes.length);
         _notes.forEach(async _note => {
           const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
-          expect(note.author.toString()).toBe(_note.author._id.toString());
-          expect(note.date).toBe(note.date);
+          expect(note.author.toString()).to.equal(_note.author._id.toString());
+          expect(note.date).to.equal(note.date);
           if (_note._id.toString() !== _idToUpdate) {
-            expect(note.text).toBe(_note.text);
+            expect(note.text).to.equal(_note.text);
           } else {
-            expect(note.text.toBe(expectedText));
+            expect(note.text.to.equal(expectedText));
           }
         });
-        
       });
 
       it('should delete a note', async () => {
         const index = Math.floor(Math.random() * notes.length);
         const _idToDelete = notes[index]._id;
         await logic.deleteNote(_idToDelete.toString());
+        
         const _note = await Note.findById(_idToDelete);
-        expect(_note).toBeNull();
+        expect(_note).to.be.null;
+
         const _notes = await Note.find();
-        expect(_notes).toHaveLength(notes.length - 1);
+        expect(_notes).to.have.lengthOf(notes.length - 1);
         notes.splice(index);
         _notes.forEach(async _note => {
           const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
-          expect(note.text).toBe(_note.text);
-          expect(note.author.toString()).toBe(_note.author._id.toString());
-          expect(note.date).toBe(note.date);
+          expect(note.text).to.equal(_note.text);
+          expect(note.author.toString()).to.equal(_note.author._id.toString());
+          expect(note.date).to.equal(note.date);
         });
       });
     });
