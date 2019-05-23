@@ -90,8 +90,27 @@ const logic = {
   },
 
   createNewNote(author, text, date) {
-    return Note.create({ author, text, date });
+    const note = new Note({ author, text, date });
+    return note.save();
   },
+
+  retrieveNote(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
+    return Note.findById(id);
+  },
+
+  allNotes() {
+    return Note.find();
+  },
+
+  updateNote(id, data) {
+    return Note.findByIdAndUpdate(id, data);
+  },
+
+  deleteNote(id) {
+    return Note.findByIdAndDelete(id);
+  },
+
 };
 
 module.exports = logic;

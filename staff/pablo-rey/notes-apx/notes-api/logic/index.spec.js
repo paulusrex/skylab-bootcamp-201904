@@ -343,44 +343,103 @@ describe('logic', () => {
       'A gramenawer mamaar pecador a peich llevame al sircoo caballo blanco caballo negroorl benemeritaar torpedo ese que llega diodenoo.',
       'La caidita quietooor papaar papaar torpedo diodenoo benemeritaar amatomaa me cago en tus muelas va usté muy cargadoo.',
       'Llevame al sircoo no te digo trigo por no llamarte Rodrigor torpedo a peich ese hombree la caidita la caidita a gramenawer torpedo benemeritaar sexuarl.',
-      'Al ataquerl papaar papaar quietooor ese hombree la caidita mamaar ese que llega no te digo trigo por no llamarte Rodrigor ese pedazo de.'
-      ,'Pupita la caidita pecador por la gloria de mi madre a wan llevame al sircoo pupita quietooor de la pradera mamaar apetecan.',
-      'Ese pedazo de a wan de la pradera a peich a peich condemor caballo blanco caballo negroorl ese hombree'
+      'Al ataquerl papaar papaar quietooor ese hombree la caidita mamaar ese que llega no te digo trigo por no llamarte Rodrigor ese pedazo de.',
+      'Pupita la caidita pecador por la gloria de mi madre a wan llevame al sircoo pupita quietooor de la pradera mamaar apetecan.',
+      'Ese pedazo de a wan de la pradera a peich a peich condemor caballo blanco caballo negroorl ese hombree',
     ];
     const randomText = () =>
-      new Array(Math.floor(Math.random() * 8))
+      new Array(Math.ceil(Math.random() * 8))
         .fill(' ')
         .map(() => ipsumText[Math.floor(Math.random() * ipsumText.length)])
         .join(' ');
 
-    describe('create', () => {
-      let id, user;
+    let user;
+    beforeEach(async () => {
+      await User.insertMany(users);
+      user = await User.findOne({ email: users[0].email });
+    });
+
+    it('should create a note with correct data', async () => {
+      const text = randomText();
+      await logic.createNewNote(user, text, new Date());
+      const _notes = await Note.find();
+      expect(_notes).toHaveLength(1);
+      const _note = _notes[0];
+      expect(_note.text).toBe(text);
+      expect(_note.author._id.toString()).toBe(user._id.toString());
+    });
+
+    describe('multiple notes', () => {
+      let notes;
       beforeEach(async () => {
-        await User.insertMany(users);
-        user = await User.findOne({email: users[0].email});
+        notes = [];
+        for (let ii = 0; ii < 10; ii++) {
+          const text = randomText();
+          notes.push(await logic.createNewNote(user, text, new Date()));
+        }
       });
 
-      it('should create a note with correct data', async () => {
-        const text = randomText();
-        await logic.createNewNote(user, text, new Date());
+      it('should retrieve all notes', async () => {
         const _notes = await Note.find();
-        expect(_notes).toHaveLength(1);
-        const _note = _notes[0];
-        expect(_note.text).toBe(text);
-        expect(_note.author._id.toString()).toBe(user._id.toString())
-      })
+        expect(_notes).toHaveLength(notes.length);
+        _notes.forEach(async _note => {
+          const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
+          expect(note.text).toBe(_note.text);
+          expect(note.author.toString()).toBe(_note.author._id.toString());
+          expect(note.date).toBe(note.date);
+        });
+      });
 
-      fit('should retrieve all notes', async () => {
-        for (let ii=0; ii < 10; ii++ ) {
-        const text = randomText();
-        await logic.createNewNote(user, text, new Date());
-        }
+      it('should retrieve a note', async () => {
+        const expectedNote = notes[Math.floor(Math.random() * notes.length)];
+        const note = await logic.retrieveNote(expectedNote._id.toString());
+        expect(note.text).toBe(expectedNote.text);
+        expect(note.author.toString()).toBe(expectedNote.author._id.toString());
+        expect(note.date.getTime()).toBe(expectedNote.date.getTime());
+      });
+
+      it('should update the text of a note', async () => {
+        const index = Math.floor(Math.random() * notes.length);
+        const _idToUpdate = notes[index]._id;
+        const expectedText = randomText();
+        
+        await logic.updateNote(_idToUpdate.toString(), { text : expectedText });
+        
+        const _note = await Note.findById(_idToUpdate);
+        expect(_note).not.toBeNull();
+        expect(_note.text).toBe(expectedText);
+        
         const _notes = await Note.find();
-        expect(_notes).toHaveLength(1);
-        const _note = _notes[0];
-        expect(_note.text).toBe(text);
-        expect(_note.author._id.toString()).toBe(user._id.toString())
-      })
-    })
+        expect(_notes).toHaveLength(notes.length);
+        _notes.forEach(async _note => {
+          const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
+          expect(note.author.toString()).toBe(_note.author._id.toString());
+          expect(note.date).toBe(note.date);
+          if (_note._id.toString() !== _idToUpdate) {
+            expect(note.text).toBe(_note.text);
+          } else {
+            expect(note.text.toBe(expectedText));
+          }
+        });
+        
+      });
+
+      it('should delete a note', async () => {
+        const index = Math.floor(Math.random() * notes.length);
+        const _idToDelete = notes[index]._id;
+        await logic.deleteNote(_idToDelete.toString());
+        const _note = await Note.findById(_idToDelete);
+        expect(_note).toBeNull();
+        const _notes = await Note.find();
+        expect(_notes).toHaveLength(notes.length - 1);
+        notes.splice(index);
+        _notes.forEach(async _note => {
+          const note = _notes.find(__note => __note._id.toString() === _note._id.toString());
+          expect(note.text).toBe(_note.text);
+          expect(note.author.toString()).toBe(_note.author._id.toString());
+          expect(note.date).toBe(note.date);
+        });
+      });
+    });
   });
 });
