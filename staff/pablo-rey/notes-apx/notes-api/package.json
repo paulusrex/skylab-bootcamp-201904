@@ -1,0 +1,44 @@
+{
+  "name": "rest-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "@graphql-modules/core": "^0.7.1",
+    "@types/jest": "^24.0.13",
+    "apollo-server": "^2.5.0",
+    "apollo-server-express": "^2.5.0",
+    "atob": "^2.1.2",
+    "axios": "^0.18.0",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.0.0",
+    "express": "^4.16.4",
+    "graphql": "^14.3.0",
+    "graphql-playground-react": "^1.7.20",
+    "graphql-tools": "^4.0.4",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.5.10",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "jest": "^24.8.0"
+  },
+  "scripts": {
+    "start": "node .",
+    "watch": "nodemon .",
+    "debug": "node debug .",
+    "test": "jest",
+    "test:debug": "node debug ./node_modules/jest/bin/jest.js --runInBand --watchAll",
+    "test:inspect": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watchAll"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "*.json"
+    ],
+    "delay": "2500"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
