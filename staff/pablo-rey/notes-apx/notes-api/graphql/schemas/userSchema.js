@@ -1,9 +1,8 @@
+//@ts-check
 const { makeExecutableSchema } = require('graphql-tools');
 const { gql } = require('apollo-server-express');
 const logic = require('../../logic');
-const { LogicError } = require('../../common/errors');
 const { UserInputError, AuthenticationError } = require('apollo-server');
-const userData = require('../../data/user-data');
 
 const typeDefs = gql`
   type User {
@@ -11,7 +10,6 @@ const typeDefs = gql`
     email: String!
     name: String!
     surname: String!
-    favs: [String!]!
   }
   type Query {
     users: [User!]!
@@ -28,11 +26,10 @@ const resolvers = {
   Query: {
     async users(parent, args, { token }, info) {
       if (!logic.verifyToken(token)) throw new AuthenticationError('wrong/missing credentials');
-      return await userData.list();
     },
     async user(parent, args, { userId }, info) {
       const result = await logic.retrieveCompleteUser(userId);
-      return { ...result, id: userId, cart: retrieveCart(userId) };
+      return { ...result, id: userId };
     },
   },
   Mutation: {
@@ -51,8 +48,8 @@ const resolvers = {
 
       if (logic.verifyToken(token)) throw new AuthenticationError('wrong/missing credentials');
 
-      const result = await logic.updateUser(token, name, surname, email, password);
-      return !result;
+      await logic.updateUser(token, name, surname, email, password);
+      return true;
     },
     async deleteUser(parent, args, { token }, info) {
       const result = await logic.deleteUser(token);

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const chai = require('chai'),
-  expect = chai.expect,
-  should = chai.should();
+  expect = chai.expect;
 
 const mongoose = require('mongoose');
 const uuid = require('uuid/v4');

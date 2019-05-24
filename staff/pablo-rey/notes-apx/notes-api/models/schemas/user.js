@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const Note = require('./note')
 
 module.exports = new Schema({
   name: {
@@ -21,4 +22,5 @@ module.exports = new Schema({
     type: String,
     required: true,
   },
+  privateNotes: [Note],
 });

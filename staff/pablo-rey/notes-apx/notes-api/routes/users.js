@@ -51,56 +51,15 @@ router.delete('/users', auth, (req, res) => {
 router.get('/users', auth, (req, res) => {
   const { userId } = req;
 
-  handleErrors(() => logic.retrieveUser(userId).then(user => res.json(user)), res);
-});
-
-router.post('/users/cart/add/', auth, jsonParser, (req, res) => {
-  const {
-    userId,
-    body: { duckId },
-  } = req;
-
-  handleErrors(() => logic.addToCart(userId, duckId).then(cart => res.json(cart)), res);
-});
-
-router.post('/users/cart/remove/', auth, jsonParser, (req, res) => {
-  const {
-    userId,
-    body: { duckId },
-  } = req;
-
-  handleErrors(() => logic.removeFromCart(userId, duckId).then(cart => res.json(cart)), res);
-});
-
-router.post('/users/cart/subtract/', auth, jsonParser, (req, res) => {
-  const {
-    userId,
-    body: { duckId },
-  } = req;
-
-  handleErrors(() => logic.subtractFromCart(userId, duckId).then(cart => res.json(cart)), res);
-});
-
-router.get('/users/cart', auth, (req, res) => {
-  const { userId } = req;
-
-  handleErrors(() => logic.retrieveCart(userId).then(user => res.json(user)), res);
-});
-
-router.put('/users/cart', auth, jsonParser, (req, res) => {
-  const {
-    body: { cart },
-    userId,
-  } = req;
-  router.put('/users/cart', auth, jsonParser, (req, res) => {
-    const {
-      body: { cart },
-      userId,
-    } = req;
-
-    handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
-  });
-  handleErrors(() => logic.saveCart(userId, cart).then(cart => res.json({ cart })), res);
+  handleErrors(
+    () =>
+      logic
+        .retrieveUser(userId)
+        .then(({ id, name, surname, email, privateNotes }) =>
+          res.json({ id, name, surname, email, privateNotes })
+        ),
+    res
+  );
 });
 
 router.post('/users/auth', jsonParser, (req, res) => {
@@ -108,10 +67,10 @@ router.post('/users/auth', jsonParser, (req, res) => {
     body: { email, password },
   } = req;
 
-  handleErrors(
-    () => logic.authenticateUser(email, password).then(token => res.json({ token })),
-    res
-  );
+  handleErrors(async () => {
+    const token = await logic.authenticateUser(email, password);
+    res.json({ token });
+  }, res);
 });
 
 module.exports = router;

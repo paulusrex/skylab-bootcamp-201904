@@ -1,38 +1,38 @@
+//@ts-check
 require('dotenv').config();
-
-const express = require('express');
-const { MongoClient } = require('mongodb');
-const { ApolloServer } = require('apollo-server-express');
-const cors = require('cors');
-const package = require('./package.json');
-const apolloContext = require('./graphql/middleware/apolloContext');
-const userData = require('./data/user-data');
-
 const {
-  env: { PORT },
+  env: { PORT, MONGO_URL },
   argv: [, , port = PORT || 8080],
 } = process;
 
-const app = express();
+const express = require('express');
 
+const mongoose = require('mongoose');
+mongoose.connect(MONGO_URL, { useNewUrlParser: true });
+const db = mongoose.connection;
+db.on('error', err => console.error('MongoDB connection error'));
+
+const { ApolloServer } = require('apollo-server-express');
 const rootSchema = require('./graphql/rootSchema');
-
+const apolloContext = require('./graphql/middleware/apolloContext');
 const apolloServer = new ApolloServer({
-  schema: rootSchema,
-  context: apolloContext,
-  introspection: true,
-  playground: true,
+schema: rootSchema,
+context: apolloContext,
+introspection: true,
+playground: true,
 });
+
+const cors = require('cors');
+const package = require('./package.json');
+
+const app = express();
 
 // Middleware
 app.use(cors());
 apolloServer.applyMiddleware({ app });
 
-app.use('/api', require('./routes/users'));
+app.use('/api', require('./routes/users'), require('./routes/notes'));
 
-
-MongoClient.connect(userData.__url__, { useNewUrlParser: true }).then(client => {
-  db = client.db();
-  userData.__model__ = User;
+db.once('open', async () => {
   app.listen(port, () => console.log(`${package.name} ${package.version} up on port ${port}`));
 });

@@ -1,9 +1,10 @@
 //@ts-check
 const jwt = require('jsonwebtoken');
+const bcryptjs = require('bcryptjs');
 const validate = require('../common/validate');
 const User = require('../models/user');
 const Note = require('../models/note');
-const { LogicError, UnauthorizedError } = require('../common/errors');
+const { LogicError, UnauthorizedError, ValueError } = require('../common/errors');
 const _token = require('../common/token');
 
 const logic = {
@@ -30,16 +31,18 @@ const logic = {
 
     validate.email(email);
 
-    const user = {
-      name,
-      surname,
-      email,
-      password,
-    };
-    return User.find({ email }).then(users => {
-      if (users.length) throw new LogicError(`user with email "${email}" already registered`);
-      return User.create(user);
-    });
+    return (async () => {
+      const _user = await User.findOne({ email });
+      if (_user) throw new LogicError(`user with email "${email}" already registered`);
+      const hash = await bcryptjs.hash(password, 8);
+      const user = {
+        name,
+        surname,
+        email,
+        password: hash,
+      };
+      await User.create(user);
+    })();
   },
 
   authenticateUser(email, password) {
@@ -48,20 +51,21 @@ const logic = {
       { name: 'password', value: password, type: 'string', notEmpty: true },
     ]);
 
-    return User.find({ email }).then(users => {
+    return (async () => {
+      const users = await User.find({ email });
       if (!users.length) throw new LogicError(`user with email "${email}" does not exist`);
       const user = users[0];
-      if (user.password !== password) throw new LogicError(`wrong credentials`);
+      const check = await bcryptjs.compare(password, user.password);
+      if (!check) throw new LogicError(`wrong credentials`);
       return this.__signToken__(user);
-    });
+    })();
   },
 
   retrieveUser(id) {
     validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
     return User.findById(id).then(user => {
       if (!user) throw new LogicError(`user with id "${id}" does not exists`);
-      const { _id, name, surname, email } = user;
-      return { id: _id.toString(), name, surname, email };
+      return user;
     });
   },
 
@@ -99,18 +103,32 @@ const logic = {
     return Note.findById(id);
   },
 
-  allNotes() {
-    return Note.find();
+  async allNotes() {
+    return await Note.find();
   },
 
   updateNote(id, data) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
     return Note.findByIdAndUpdate(id, data);
   },
 
-  deleteNote(id) {
-    return Note.findByIdAndDelete(id);
+  async deleteNote(id) {
+    validate.arguments([{ name: 'id', value: id, type: 'string', notEmpty: true }]);
+    const noteDeleted = await Note.findByIdAndDelete(id);
+    if (!noteDeleted) throw new ValueError('id not found');
+    return noteDeleted;
   },
 
+  addPrivateNote(id, noteData) {
+    return (async () => {
+      const user = await logic.retrieveUser(id);
+      const note = new Note({ ...noteData, author: user });
+
+      user.privateNotes.push(note);
+      await user.save();
+      return true;
+    })();
+  },
 };
 
 module.exports = logic;
