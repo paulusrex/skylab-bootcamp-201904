@@ -33,7 +33,6 @@ export class User extends Typegoose {
   @prop({ required: true })
   password: string;
 
-  @Authorized(ONLY_SUPERADMIN)
   @Field()
   @prop({ required: true, default: GUEST_ROLE, enum: ROLES })
   role: string;
