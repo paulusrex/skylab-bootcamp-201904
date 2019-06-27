@@ -124,6 +124,7 @@ export class AttendSessionResolvers {
    * @param status 
    * @param ctx 
    */
+  @Authorized(ALWAYS_OWN_CUSTOMER)
   @Mutation(returns => Boolean)
   async updateStatusAttendance(
     @Arg('attendanceId') attendanceId: string,

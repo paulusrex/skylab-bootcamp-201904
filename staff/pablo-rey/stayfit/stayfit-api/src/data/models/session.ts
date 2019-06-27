@@ -17,11 +17,11 @@ export class Session extends Typegoose {
   title: string;
 
   @Field(returns => Provider)
-  @prop({ ref: Provider, required: true })
+  @prop({ ref: { name: 'Provider' }, required: true })
   provider: Ref<Provider>;
 
   @Field(returns => [User], { nullable: 'items' })
-  @arrayProp({ itemsRef: User })
+  @arrayProp({ itemsRef: { name: 'User' } })
   coaches: Ref<User>[];
 
   @prop()
@@ -51,7 +51,7 @@ export class Session extends Typegoose {
   attendanceDefaultStatus: string;
 
   @Field(returns => [Attendance])
-  @arrayProp({ itemsRef: Attendance, required: false })
+  @arrayProp({ itemsRef: { name: 'Attendance' }, required: false })
   attendances: Ref<Attendance>[];
 
   @Field()

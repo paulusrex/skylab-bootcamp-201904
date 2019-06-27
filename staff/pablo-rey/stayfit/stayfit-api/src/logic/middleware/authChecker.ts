@@ -1,9 +1,10 @@
 import { AuthenticationError } from './../../common/errors/index';
 import { AuthChecker } from 'type-graphql';
 import { AuthorizationError, LogicError } from '../../common/errors';
-import { UserModel, User } from '../../data/models/user';
 import { Provider } from './../../data/models/provider';
+import { UserModel, User } from '../../data/models/user';
 import { MyContext } from './MyContext';
+import { AttendanceModel } from './../../data/models/attendance';
 import { SUPERADMIN_ROLE } from '../../data/enums';
 
 export const ONLY_SUPERADMIN = 'ONLY_SUPERADMIN';
@@ -42,6 +43,12 @@ export const authChecker: AuthChecker<MyContext> = async ({ root, args, context,
       case ALWAYS_OWN_CUSTOMER:
         let customerUserId = args.userId;
         if (!customerUserId && !!args.data) customerUserId = args.data.userId;
+        if (!customerUserId) {
+          if (!!args.attendanceId) {
+            const attendance = await AttendanceModel.findById(args.attendanceId);
+            if (attendance) customerUserId = attendance.user.toString();
+          }
+        }
         if (!customerUserId) throw new LogicError(`user target is required`);
         owner = owner || await UserModel.findById(ownerId).populate('adminOf');
         if (!owner) throw new LogicError(`owner not valid`);
