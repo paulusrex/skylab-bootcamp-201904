@@ -26,7 +26,6 @@ function LogIn({ history }) {
 
   const handleLogin = async e => {
     e.preventDefault();
-    debugger
     if (await ctx.login(email, password)) {
       history.push('/');
     }
