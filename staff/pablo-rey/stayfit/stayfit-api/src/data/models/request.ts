@@ -11,11 +11,11 @@ export class RequestCustomer extends Typegoose {
   id: number;
 
   @Field(returns => User)
-  @prop({ ref: User, required: true })
+  @prop({ ref: { name: 'User' }, required: true })
   user: Ref<User>;
 
-  @Field(returns => Session)
-  @prop({ ref: { name: 'Session' }, required: true })
+  @Field(returns => Provider)
+  @prop({ ref: { name: 'Provider' }, required: true })
   provider: Ref<Provider>;
 
   @Field()
