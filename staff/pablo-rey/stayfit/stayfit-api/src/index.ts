@@ -14,6 +14,7 @@ const {
   env: { PORT, MONGODB_URL },
 } = process;
 
+console.log(MONGODB_URL)
 mongoose.connect(MONGODB_URL!, { useNewUrlParser: true });
 const db = mongoose.connection;
 db.on('error', err => console.error('MongoDB connection error', err));

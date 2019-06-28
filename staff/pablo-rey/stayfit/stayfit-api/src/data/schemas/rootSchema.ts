@@ -23,6 +23,7 @@ import { AttendSessionResolvers, AttendanceInput } from '../../logic/resolvers/s
 import { ListAttendancesResolvers } from './../../logic/resolvers/attendances/list-attendances';
 import { ListSessionsAdminsResolvers } from './../../logic/resolvers/sessions/list-sessions/list-sessions-admins';
 import { ProviderResolver } from '../../logic/resolvers/providers/retrieve-provider';
+import { DbMaintenanceResolvers } from '../../logic/resolvers/settings/dbMaintenance'
 
 export async function createSchema() {
   return await buildSchema({
@@ -49,6 +50,7 @@ export async function createSchema() {
       SessionsWithMyAttendance,
       ListSessionsAdminsResolvers,
       ProviderResolver,
+      DbMaintenanceResolvers,
     ],
     authChecker: authChecker,
   });

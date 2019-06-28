@@ -1,13 +1,12 @@
 import * as moment from 'moment';
 import { Arg, Authorized, Ctx, Query, Resolver } from 'type-graphql';
-import { User } from '../../../data/models/user';
 import { ONLY_IF_MY_CUSTOMER } from '../../../logic/middleware/authChecker';
 import { MyContext } from '../../middleware/MyContext';
 import { SessionsWithMyAttendance } from '../sessions/list-sessions/list-sessions-users';
-import { AttendanceModel } from './../../../data/models/attendance';
+import { AttendanceModel, Attendance } from './../../../data/models/attendance';
 import { ALWAYS_OWN_USER } from './../../middleware/authChecker';
 
-@Resolver(User)
+@Resolver(Attendance)
 export class ListAttendancesResolvers {
 
   /**
